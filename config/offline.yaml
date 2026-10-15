@@ -1,0 +1,3 @@
+schema_version: 1
+device: cpu
+local_only: true

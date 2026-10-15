@@ -2,6 +2,14 @@
 
 Research date: **2026-10-15 UTC**. This is a design-phase evidence register, not an inference benchmark or a statement that weights have been installed. **No weights were downloaded.** Code licenses, weight licenses, and dataset licenses are separate.
 
+Backend follow-up: the local-only Microsoft adapter, explicit provisioning/
+offline-verification script and optional security-reviewed package lock now
+exist. See [STATUS.md](STATUS.md) for actual execution evidence and [API.md](API.md)
+for supported statuses. HF metadata remains unreachable; **no weights or real
+inference have been tested**. The reference v4.46.3 below is not the selected
+runtime; optional runtime pins are Torch2.14.1/Transformers5.20.0 in `uv.lock`,
+not installed/compatibility-tested in this environment.
+
 ## Evidence quality and network limitations
 
 Direct HTTPS requests to Hugging Face failed DNS resolution (`No address associated with hostname`) for **all seven** model metadata endpoints below. A second path through the web-fetch tool also failed for the AIDC and Microsoft metadata endpoints and the Microsoft raw card. The OpenRouter website likewise failed DNS resolution. Official GitHub retrieval succeeded and was used instead.

@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Measure real local line inference; never substitutes annotations for predictions."""
+import argparse
+import json
+import platform
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from backend.app.ocr import TrOCR, ModelError
+
+
+def distance(a, b):
+    row = list(range(len(b) + 1))
+    for i, left in enumerate(a, 1):
+        new = [i]
+        for j, right in enumerate(b, 1):
+            new.append(min(new[-1] + 1, row[j] + 1, row[j - 1] + (left != right)))
+        row = new
+    return row[-1]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", required=True, help="JSON list of {image, reference}; explicit evaluation-only labels")
+    parser.add_argument("--model-dir", default="var/models/microsoft-trocr")
+    parser.add_argument("--device", choices=["cpu", "cuda", "mps", "auto"], default="cpu")
+    args = parser.parse_args()
+    # Reuse the deadline-isolated inference protocol; this CLI never runs model code in its own process.
+    import multiprocessing
+    from backend.app.ocr import inference_child
+    context = multiprocessing.get_context("spawn")
+    parent, child = context.Pipe()
+    process = context.Process(target=inference_child, args=(child, args.model_dir, args.device))
+    process.start()
+    child.close()
+    chars = words = char_errors = word_errors = exact = 0
+    latencies = []
+    try:
+        samples = json.loads(Path(args.manifest).read_text())
+        for sample in samples:
+            start = time.monotonic()
+            parent.send((Path(sample["image"]).read_bytes(), 128))
+            if not parent.poll(300):
+                raise ModelError("deadline_exceeded")
+            status, prediction = parent.recv()
+            if status != "ok":
+                raise ModelError(prediction)
+            latencies.append(time.monotonic() - start)
+            reference, text = sample["reference"], prediction["raw_text"]
+            chars += len(reference)
+            words += len(reference.split())
+            char_errors += distance(reference, text)
+            word_errors += distance(reference.split(), text.split())
+            exact += reference == text
+        print(json.dumps({"samples": len(samples), "cer": char_errors / chars if chars else None,
+                          "wer": word_errors / words if words else None,
+                          "exact_match": exact / len(samples) if samples else None,
+                          "latency_seconds": latencies, "hardware": {
+                              "machine": platform.machine(), "processor": platform.processor(),
+                              "platform": platform.platform()},
+                          "requested_device": args.device,
+                          "device": prediction["device"] if samples else None,
+                          "dtype": "float32", "calibrated": False}))
+    except ModelError as exc:
+        print(json.dumps({"status": exc.code, "measurements": None}))
+        raise SystemExit(2)
+    finally:
+        if process.is_alive():
+            process.terminate()
+        process.join(5)
+        if process.is_alive():
+            process.kill()
+            process.join()
+        parent.close()
+
+
+if __name__ == "__main__":
+    main()

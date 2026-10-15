@@ -2,6 +2,13 @@
 
 Status: **THINKING/design completed, implementation not yet claimed**. Date: 2026-10-15 UTC. Repository initially contained README and .gitignore only. This document is the build contract for sequential DATA, BACKEND and STUDIO work; implementation deviations must be documented honestly. Model evidence and external contract limitations are in [MODELS.md](MODELS.md).
 
+**Backend implementation supersedes proposed interfaces below:** see [API.md](API.md)
+and [STATUS.md](STATUS.md) for executable routes, tests and limitations. In the
+amount-recognition domain **CAR means Courtesy Amount Recognition (words)** and
+**LAR means Legal Amount Recognition (figures)** as explicitly requested. Earlier
+CAR/LAR *form names* below and in synthetic fixtures are unrelated historical
+labels; amount validation uses `amount_words`/`amount_figures`, never form kind.
+
 ## 1. Scope and acceptance boundary
 
 Build a self-hosted, local-first form transcription/review application, not an automated bank decision system. The first vertical slice supports versioned templates, image upload, explicit field ROIs, bounded local OCR, schema validation, encrypted persistence and human correction/export in a React TypeScript studio.

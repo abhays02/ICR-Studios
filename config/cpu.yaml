@@ -1,0 +1,4 @@
+schema_version: 1
+device: cpu
+dtype: float32
+local_only: true
