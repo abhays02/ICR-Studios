@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+var
+**/__pycache__
+**/node_modules
+studio/dist
+*.egg-info
+.env
+data/real_handwriting
+data/fonts

@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+command -v uv >/dev/null 2>&1 || { echo "Install uv 0.13.1 first (see README)."; exit 1; }
+uv sync --frozen
+(cd studio && npm ci --ignore-scripts && npm run build)
+if [ ! -f var/secrets.env ]; then uv run --frozen icr init-secrets; fi
+. ./var/secrets.env
+echo "Studio: http://127.0.0.1:8000 — manually enter the operator token from private var/secrets.env."
+exec uv run --frozen icr serve

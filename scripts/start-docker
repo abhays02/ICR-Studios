@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+docker compose build studio
+directory=${ICR_VOLUME_DIR:-./var/docker}
+mkdir -p "$directory"
+# Container UID is explicit; do not make secrets world-readable.
+docker compose run --rm --user 0:0 --entrypoint /bin/sh studio -c \
+  'if [ ! -f /app/var/secrets.env ]; then icr init-secrets; fi; chown -R 10001:10001 /app/var; chmod 700 /app/var'
+docker compose up -d studio
+echo "Studio: http://127.0.0.1:8000 — retrieve the private operator token locally; never share it."

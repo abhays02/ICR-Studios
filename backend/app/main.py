@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import delete, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.staticfiles import StaticFiles
 
 from .config import HOT_KEYS, Settings, load_settings
 from .crypto import IntegrityError, Keyring
@@ -123,7 +124,11 @@ def create_app(settings=None, keys=None, principals=None, worker_target=None, co
         response = await call_next(request)
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
                                  "X-Request-ID": request.state.request_id,
-                                 "Referrer-Policy": "no-referrer"})
+                                 "Referrer-Policy": "no-referrer",
+                                 "Content-Security-Policy": "default-src 'self'; img-src 'self' blob:; "
+                                 "style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; "
+                                 "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+                                 "Permissions-Policy": "camera=(), microphone=(), geolocation=()"})
         return response
 
     @app.exception_handler(StarletteHTTPException)
@@ -608,4 +613,7 @@ def create_app(settings=None, keys=None, principals=None, worker_target=None, co
         prune()
         return {"status": "retention_applied"}
 
+    studio = ROOT / "studio" / "dist"
+    if studio.is_dir():
+        app.mount("/", StaticFiles(directory=studio, html=True), name="studio")
     return app

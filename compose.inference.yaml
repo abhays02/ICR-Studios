@@ -1,0 +1,7 @@
+# Explicit optional inference dependencies, still CPU by default; no weights fetched.
+services:
+  studio:
+    build:
+      target: inference
+    environment:
+      ICR_DEVICE: cpu

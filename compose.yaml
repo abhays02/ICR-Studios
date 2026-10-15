@@ -1,0 +1,57 @@
+services:
+  studio:
+    build:
+      context: .
+      target: cpu
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      ICR_CONFIG: config/server.yaml
+      ICR_HOST: 0.0.0.0
+      ICR_PORT: "8000"
+      ICR_DATA_DIR: var
+      ICR_MODEL_DIR: var/models/microsoft-trocr
+      HF_HOME: /app/var/cache/huggingface
+      TORCH_HOME: /app/var/cache/torch
+      TMPDIR: /app/run
+    entrypoint: ["/bin/sh", "-c", ". /app/var/secrets.env && exec icr serve"]
+    volumes:
+      - ${ICR_VOLUME_DIR:-./var/docker}:/app/var
+    read_only: true
+    tmpfs:
+      - /app/run:size=64m,mode=700,uid=10001,gid=10001
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+  gpu:
+    profiles: [gpu]
+    build:
+      context: .
+      target: inference
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      ICR_CONFIG: config/server.yaml
+      ICR_DEVICE: cuda
+      ICR_DATA_DIR: var/gpu
+      ICR_MODEL_DIR: var/models/microsoft-trocr
+      HF_HOME: /app/var/cache/huggingface
+      TORCH_HOME: /app/var/cache/torch
+      TMPDIR: /app/run
+    entrypoint: ["/bin/sh", "-c", ". /app/var/secrets.env && exec icr serve"]
+    volumes:
+      - ${ICR_VOLUME_DIR:-./var/docker}:/app/var
+    read_only: true
+    tmpfs:
+      - /app/run:size=64m,mode=700,uid=10001,gid=10001
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

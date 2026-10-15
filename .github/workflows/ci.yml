@@ -1,0 +1,50 @@
+name: CPU verification
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TMPDIR: ${{ github.workspace }}/var/build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: mkdir -p var/build
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.12.3
+      - run: python -m pip install uv==0.13.1
+      - run: uv sync --frozen --extra test
+      - run: npm ci --ignore-scripts && npm run lint && npm test && npm run build
+        working-directory: studio
+      - run: uv run --frozen --extra test python -m unittest discover -s tests -v
+      - run: python -m compileall -q backend scripts tests
+      - name: Real browser smoke against local CPU API
+        env:
+          ICR_DATA_DIR: var/ci
+          ICR_SMOKE_SECRETS: var/ci/secrets.env
+        run: |
+          uv run --frozen --extra test icr init-secrets
+          . var/ci/secrets.env
+          .venv/bin/icr serve > var/ci/server.log 2>&1 &
+          server=$!
+          trap 'kill "$server"; wait "$server" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/healthz; then break; fi
+            sleep 1
+          done
+          export CHROMIUM="$(command -v google-chrome || command -v chromium)"
+          cd studio
+          npm run test:smoke
+      - run: docker compose config --quiet && docker build --target cpu -t icr-bank:ci .
