@@ -1,0 +1,25 @@
+{
+  "dataset_id": "ylecun/mnist",
+  "retrieved_at": "2026-10-15T22:48:12.653225+00:00",
+  "status": "incomplete",
+  "revision": null,
+  "license": null,
+  "real_handwriting_downloaded": false,
+  "attempts": [
+    {
+      "url": "https://huggingface.co/api/datasets/ylecun/mnist",
+      "outcome": "failed",
+      "error": "<urlopen error [Errno -5] No address associated with hostname>",
+      "note": "Use revision/license members for partial evidence; failure is not evidence of dataset absence."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/cvdfoundation/mnist/7477bafafc2029b41adb6b2ebf5033aeaacee71e/README.md",
+      "outcome": "official mirror README retrieved",
+      "revision": "7477bafafc2029b41adb6b2ebf5033aeaacee71e",
+      "sha256": "6b308f11251f432a5613ef9f1934a3fdce162e9847c7cbf66bea7f508e30fe9a",
+      "note": "CVDF explicitly credits LeCun and links the same MNIST dataset. Repository contains README only; no GitHub-hosted image payload or dataset license. External storage links not followed. No data copied."
+    }
+  ],
+  "scope": "MNIST real handwritten digits only; not bank-form or cursive evidence",
+  "attribution": "Yann LeCun, Corinna Cortes, Christopher J. C. Burges; MNIST"
+}

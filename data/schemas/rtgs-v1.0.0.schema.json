@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:icr-bank:synthetic:rtgs:1.0.0",
+  "title": "RTGS business fields (draft permits null; final review validates completion)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sender_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "beneficiary_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "account_number": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "routing_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "amount": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "pattern": "^\\d{1,12}\\.\\d{2}$"
+    },
+    "amount_words": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "currency": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "enum": [
+        "INR",
+        null
+      ]
+    },
+    "authorized": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "declaration_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "signature_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "sender_name",
+    "beneficiary_name",
+    "account_number",
+    "routing_code",
+    "amount",
+    "amount_words",
+    "currency",
+    "authorized",
+    "declaration_date",
+    "signature_present"
+  ]
+}

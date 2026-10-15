@@ -1,0 +1,13 @@
+Original synthetic forms, template layouts and fictional annotations in this
+directory and ../templates/ and ../schemas/ are dedicated to the public domain
+under CC0 1.0 Universal by their contributors.
+
+To the extent permitted by law, contributors waive all copyright and related
+rights in these original generated works. They are provided without warranty.
+See https://creativecommons.org/publicdomain/zero/1.0/legalcode for the complete
+CC0 1.0 Universal legal instrument.
+
+This dedication does NOT relicense third-party fonts or downloaded datasets.
+Font software retains the licenses and copyright notices in ../fonts/.
+Any separately downloaded MNIST data retains its upstream dataset terms;
+see ../real_handwriting/fetch_report.json and the pinned upstream dataset card.

@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""Generate fictional Studio fixtures; script fonts are NOT real handwriting.
+
+Requires Python 3.11+ and Pillow==12.3.0 (advisory checked 2026-10-15).
+Install: python -m pip install Pillow==12.3.0
+Provision: ./scripts/fetch_samples --fonts-only
+Generate: ./scripts/generate_samples --seed 20261015
+"""
+import argparse
+import hashlib
+import json
+import math
+import random
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont, __version__ as PILLOW_VERSION
+
+ROOT = Path(__file__).resolve().parents[1]
+WIDTH, HEIGHT = 1800, 2400
+VERSION = "1.0.0"
+
+# Stable field IDs implement DESIGN.md; other form kinds are fixture-only extensions.
+COMMON = [
+    ("full_name", "Full name", "text", "Fictional Applicant ALPHA"),
+    ("date_of_birth", "Date of birth (YYYY-MM-DD)", "date", "1991-04-18"),
+    ("address", "Address (two explicit lines)", "multiline",
+     "17 Imaginary Lane\nExample Test District"),
+    ("phone", "Phone (reserved fictional range)", "text", "+1 202 555 0107"),
+    ("email", "Email", "text", "alpha@example.invalid"),
+]
+END = [
+    ("declaration_date", "Declaration date", "date", "2026-10-15"),
+    ("signature_present", "Synthetic declaration checkbox (not signature verification)",
+     "checkbox", True),
+]
+SPECS = {
+    "CAR": COMMON + [
+        ("account_type", "Account type", "enum", "savings"),
+        ("tax_identifier", "Optional tax identifier (intentionally blank)", "text", ""),
+    ] + END,
+    "LAR": COMMON + [
+        ("requested_amount", "Requested amount", "decimal", "25000.00"),
+        ("currency", "Currency", "enum", "INR"),
+        ("tenure_months", "Tenure in months (comb boxes)", "comb", "024"),
+        ("annual_income", "Annual income", "decimal", "72000.00"),
+        ("employment_type", "Employment type", "enum", "salaried"),
+        ("purpose", "Loan purpose", "text", "Fictional workshop equipment"),
+    ] + END,
+    "KYC": COMMON + [
+        ("identity_reference", "TEST identifier (comb boxes; not government ID)", "comb", "0000123456"),
+        ("consent", "Consent checkbox (demo only)", "checkbox", False),
+    ] + END,
+    "RTGS": [
+        ("sender_name", "Sender", "text", "Fictional Applicant BETA"),
+        ("beneficiary_name", "Beneficiary", "text", "Fictional Beneficiary GAMMA"),
+        ("account_number", "TEST account (comb boxes; not routable)", "comb", "000000012345"),
+        ("routing_code", "TEST routing code (deliberately invalid)", "text", "TEST-NOT-ROUTABLE"),
+        ("amount", "Amount in figures", "decimal", "12500.50"),
+        ("amount_words", "Amount in words (script-font rendering)", "text",
+         "Twelve thousand five hundred and fifty paise only"),
+        ("currency", "Currency", "enum", "INR"),
+        ("authorized", "Demo confirmation checkbox", "checkbox", True),
+    ] + END,
+    "CHEQUE": [
+        ("payee", "Payee", "text", "Fictional Payee DELTA"),
+        ("cheque_date", "Date", "date", "2026-10-15"),
+        ("amount_words", "Amount in words (script-font rendering)", "text",
+         "Seven thousand and twenty five only"),
+        ("amount", "Amount in figures", "decimal", "7025.00"),
+        ("currency", "Currency", "enum", "INR"),
+        ("cheque_number", "TEST cheque number (comb boxes)", "comb", "000007"),
+        ("crossed", "Crossed cheque checkbox (demo)", "checkbox", True),
+    ] + END,
+}
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def write_json(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+
+
+def template(kind):
+    step = 130 if len(SPECS[kind]) > 12 else 165
+    fields = []
+    for index, (field_id, label, field_type, _) in enumerate(SPECS[kind]):
+        top = 395 + index * step
+        height = 110 if field_type == "multiline" else 68
+        roi = [130, top, 1670, top + height]
+        lines = [[130, top, 1670, top + 52], [130, top + 56, 1670, top + 110]] \
+            if field_type == "multiline" else [roi]
+        fields.append({"field_id": field_id, "label": label, "type": field_type,
+                       "required": field_id != "tax_identifier", "page": 1,
+                       "roi": roi, "line_rois": lines})
+    return {"template_id": f"synthetic-{kind.lower()}", "template_version": VERSION,
+            "schema_version": VERSION, "form_kind": kind, "page": 1,
+            "width_px": WIDTH, "height_px": HEIGHT, "coordinate_space": "template_pixels",
+            "bbox_convention": "half_open_xyxy", "synthetic": True, "fields": fields}
+
+
+def business_schema(kind):
+    properties = {}
+    for field_id, _, field_type, _ in SPECS[kind]:
+        prop = {"type": ["boolean", "null"]} if field_type == "checkbox" else {
+            "type": ["string", "null"], "maxLength": 500}
+        if field_type == "decimal":
+            prop["pattern"] = r"^\d{1,12}\.\d{2}$"
+        if field_type == "date":
+            prop["format"] = "date"
+        if field_id == "tenure_months":
+            prop = {"type": ["integer", "null"], "minimum": 1, "maximum": 600}
+        enums = {"account_type": ["savings", "current"],
+                 "currency": ["INR"], "employment_type": ["salaried", "self_employed", "other"]}
+        if field_id in enums:
+            prop["enum"] = enums[field_id] + [None]
+        properties[field_id] = prop
+    return {"$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": f"urn:icr-bank:synthetic:{kind.lower()}:{VERSION}",
+            "title": f"{kind} business fields (draft permits null; final review validates completion)",
+            "type": "object", "additionalProperties": False, "properties": properties,
+            "required": [f[0] for f in SPECS[kind] if f[0] != "tax_identifier"]}
+
+
+def generate(output, fonts, seed):
+    records = json.loads((fonts / "manifest.json").read_text())
+    for record in records:
+        if sha(fonts / record["file"]) != record["sha256"]:
+            raise ValueError(f"Font provenance digest mismatch: {record['file']}")
+    printed = ImageFont.truetype(str(fonts / "DejaVuSans.ttf"), 25)
+    title = ImageFont.truetype(str(fonts / "DejaVuSans.ttf"), 52)
+    script = ImageFont.truetype(str(fonts / "Caveat.ttf"), 48)
+    number = ImageFont.truetype(str(fonts / "Caveat.ttf"), 46)
+    samples = []
+    for index, kind in enumerate(["CAR", "LAR", "KYC", "RTGS", "CHEQUE", "CAR"]):
+        degraded = index == 5
+        sample_id = f"{index + 1:02d}-{kind.lower()}" + ("-skew-invalid" if degraded else "")
+        layout = template(kind)
+        write_json(output / "templates" / f"{kind.lower()}-v{VERSION}.json", layout)
+        write_json(output / "schemas" / f"{kind.lower()}-v{VERSION}.schema.json", business_schema(kind))
+        rng = random.Random(seed + index)
+        image = Image.new("RGB", (WIDTH, HEIGHT), "#fffef8")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle([70, 70, 1730, 2330], outline="#536b75", width=3)
+        draw.text((125, 105), "FICTIONAL SANDBOX BANK", font=title, fill="#233f50")
+        draw.text((125, 185), f"{kind} / version {VERSION} / TEST ONLY - VOID", font=printed, fill="#233f50")
+        draw.text((125, 240), "SYNTHETIC DATA. Script FONT, NOT real handwriting.", font=printed, fill="#a62d28")
+        draw.text((125, 280), "Not a bank instruction, identity document, signature or accuracy benchmark.",
+                  font=printed, fill="#a62d28")
+        truth_fields = {}
+        for field in layout["fields"]:
+            field_id, field_type = field["field_id"], field["type"]
+            value = next(f[3] for f in SPECS[kind] if f[0] == field_id)
+            if degraded and field_id == "date_of_birth":
+                value = "1991-02-30"
+            x0, y0, x1, y1 = field["roi"]
+            draw.text((x0, y0 - 33), field["label"], font=printed, fill="#324955")
+            draw.rectangle([x0, y0, x1 - 1, y1 - 1], outline="#a4b3b8", width=2)
+            ink_boxes = []
+            if field_type == "checkbox":
+                draw.rectangle([x0 + 14, y0 + 12, x0 + 56, y0 + 54], outline="#324955", width=2)
+                if value:
+                    draw.line([(x0 + 20, y0 + 30), (x0 + 32, y0 + 45),
+                               (x0 + 51, y0 + 18)], fill="#183878", width=5)
+            elif field_type == "comb":
+                for char_index, char in enumerate(value):
+                    left = x0 + 12 + char_index * 65
+                    draw.rectangle([left, y0 + 5, left + 64, y1 - 6], outline="#82959d", width=2)
+                    draw.text((left + 16, y0 + 1), char, font=number, fill="#183878")
+                    ink_boxes.append(list(draw.textbbox((left + 16, y0 + 1), char, font=number)))
+            else:
+                for text, line in zip(str(value).split("\n"), field["line_rois"]):
+                    selected_font = (ImageFont.truetype(str(fonts / "Caveat.ttf"), 42)
+                                     if field_type == "multiline" else script)
+                    while draw.textlength(text, font=selected_font) > (x1 - x0 - 30):
+                        selected_font = ImageFont.truetype(str(fonts / "Caveat.ttf"),
+                                                          selected_font.size - 1)
+                    pos = (x0 + 12 + rng.randint(0, 3), line[1] - 1)
+                    draw.text(pos, text, font=selected_font, fill="#183878")
+                    if text:
+                        ink_boxes.append(list(draw.textbbox(pos, text, font=selected_font)))
+            normalized = int(value) if field_id == "tenure_months" else value
+            truth_fields[field_id] = {"raw_text": str(value) if not isinstance(value, bool) else None,
+                                      "value": normalized, "template_roi": field["roi"],
+                                      "template_line_rois": field["line_rois"],
+                                      "template_ink_bboxes": ink_boxes,
+                                      "rendering": "checkbox" if field_type == "checkbox" else "font"}
+        draw.text((125, 2240), "No real customer data. example.invalid / reserved fictional phone range.",
+                  font=printed, fill="#324955")
+        shear = 0.012 if degraded else 0.0
+        if degraded:
+            for _ in range(11000):
+                x, y = rng.randrange(WIDTH), rng.randrange(HEIGHT)
+                draw.point((x, y), fill=rng.choice(["#d1d0c8", "#e0dfd7", "#eeede6"]))
+            image = image.transform((WIDTH, HEIGHT), Image.Transform.AFFINE,
+                                    (1, -shear, shear * HEIGHT / 2, 0, 1, 0),
+                                    resample=Image.Resampling.BICUBIC, fillcolor="white")
+        for field in truth_fields.values():
+            def polygon(rect):
+                a, b, c, d = rect
+                return [[round(x + shear * (y - HEIGHT / 2), 6), y]
+                        for x, y in [(a, b), (c, b), (c, d), (a, d)]]
+            def bounds(points):
+                return [math.floor(min(p[0] for p in points)), math.floor(min(p[1] for p in points)),
+                        math.ceil(max(p[0] for p in points)), math.ceil(max(p[1] for p in points))]
+            field["original_polygon"] = polygon(field["template_roi"])
+            field["original_bbox"] = bounds(field["original_polygon"])
+            field["original_line_polygons"] = [polygon(r) for r in field["template_line_rois"]]
+            field["original_line_bboxes"] = [bounds(p) for p in field["original_line_polygons"]]
+        png = output / "samples" / f"{sample_id}.png"
+        png.parent.mkdir(parents=True, exist_ok=True)
+        image.save(png, format="PNG", optimize=True, dpi=(200, 200))
+        truth_path = output / "samples" / f"{sample_id}.ground_truth.json"
+        truth = {"sample_id": sample_id, "synthetic": True, "is_real_handwriting": False,
+                 "template_id": layout["template_id"], "template_version": VERSION,
+                 "schema_version": VERSION, "form_kind": kind, "width_px": WIDTH,
+                 "height_px": HEIGHT, "page": 1, "coordinate_space": "original_pixels",
+                 "bbox_convention": "half_open_xyxy", "image_sha256": sha(png),
+                 "template_to_image": [[1, shear, -shear * HEIGHT / 2], [0, 1, 0], [0, 0, 1]],
+                 "alignment_required": degraded,
+                 "expected_validation_issues": ["invalid_calendar_date"] if degraded else [],
+                 "fields": truth_fields}
+        write_json(truth_path, truth)
+        samples.append({"sample_id": sample_id, "image": f"{sample_id}.png",
+                        "ground_truth": truth_path.name, "image_sha256": sha(png),
+                        "ground_truth_sha256": sha(truth_path), "bytes": png.stat().st_size,
+                        "template": f"../templates/{kind.lower()}-v{VERSION}.json",
+                        "form_kind": kind, "width_px": WIDTH, "height_px": HEIGHT,
+                        "alignment_required": degraded, "seed": seed + index})
+    write_json(output / "samples" / "manifest.json", {
+        "manifest_version": VERSION, "origin": "original synthetic fictional forms",
+        "license": "CC0-1.0 (original generated images, layouts and fictional annotations)",
+        "license_file": "LICENSE-CC0.txt", "is_real_handwriting": False,
+        "warning": "Font-rendered simulation; no real handwriting accuracy evidence. Never use truth as OCR.",
+        "generator": "scripts/generate_samples", "generator_sha256": sha(Path(__file__)),
+        "generation_seed": seed, "pillow_version": PILLOW_VERSION,
+        "fonts": records, "samples": samples})
+    total = sum(p.stat().st_size for p in (output / "samples").glob("*.png"))
+    if total >= 8 * 1024 * 1024:
+        raise ValueError("Synthetic PNG budget exceeded")
+    print(f"Generated {len(samples)} fictional {WIDTH}x{HEIGHT} PNGs; {total} PNG bytes.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=ROOT / "data")
+    parser.add_argument("--fonts", type=Path, default=ROOT / "data" / "fonts")
+    parser.add_argument("--seed", type=int, default=20261015)
+    args = parser.parse_args()
+    generate(args.output, args.fonts, args.seed)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:icr-bank:synthetic:lar:1.0.0",
+  "title": "LAR business fields (draft permits null; final review validates completion)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "full_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "date_of_birth": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "requested_amount": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "pattern": "^\\d{1,12}\\.\\d{2}$"
+    },
+    "currency": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "enum": [
+        "INR",
+        null
+      ]
+    },
+    "tenure_months": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 600
+    },
+    "annual_income": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "pattern": "^\\d{1,12}\\.\\d{2}$"
+    },
+    "employment_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "enum": [
+        "salaried",
+        "self_employed",
+        "other",
+        null
+      ]
+    },
+    "purpose": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "declaration_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "signature_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "full_name",
+    "date_of_birth",
+    "address",
+    "phone",
+    "email",
+    "requested_amount",
+    "currency",
+    "tenure_months",
+    "annual_income",
+    "employment_type",
+    "purpose",
+    "declaration_date",
+    "signature_present"
+  ]
+}
