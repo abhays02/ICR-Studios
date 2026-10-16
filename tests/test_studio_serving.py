@@ -26,7 +26,7 @@ class StudioServingTests(unittest.TestCase):
                 (studio / "api" / "v1" / "static.txt").write_text("not an API response")
             with patch("backend.app.main.ROOT", Path(root)):
                 app = create_app(
-                    Settings(data_dir=str(Path(data).relative_to(Path.cwd())), worker_enabled=False),
+                    Settings(data_dir=str(Path(data).resolve().relative_to(Path.cwd())), worker_enabled=False),
                     Keyring({"test": os.urandom(32)}, "test"),
                     {"x" * 32: {"owner": "test", "admin": True}},
                 )
