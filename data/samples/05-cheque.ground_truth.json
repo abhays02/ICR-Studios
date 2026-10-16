@@ -1,0 +1,763 @@
+{
+  "sample_id": "05-cheque",
+  "synthetic": true,
+  "is_real_handwriting": false,
+  "template_id": "synthetic-cheque",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "CHEQUE",
+  "width_px": 1800,
+  "height_px": 2400,
+  "page": 1,
+  "coordinate_space": "original_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "image_sha256": "47aa6fbd8f5b71a1ada9ce3af3cfff3f7778465d3f024d3456b63a8ddc606ea1",
+  "template_to_image": [
+    [
+      1,
+      0.0,
+      -0.0
+    ],
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "alignment_required": false,
+  "expected_validation_issues": [],
+  "fields": {
+    "payee": {
+      "raw_text": "Fictional Payee DELTA",
+      "value": "Fictional Payee DELTA",
+      "template_roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "template_line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          144,
+          409,
+          510,
+          454
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          395
+        ],
+        [
+          1670.0,
+          395
+        ],
+        [
+          1670.0,
+          463
+        ],
+        [
+          130.0,
+          463
+        ]
+      ],
+      "original_bbox": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            395
+          ],
+          [
+            1670.0,
+            395
+          ],
+          [
+            1670.0,
+            463
+          ],
+          [
+            130.0,
+            463
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ]
+    },
+    "cheque_date": {
+      "raw_text": "2026-10-15",
+      "value": "2026-10-15",
+      "template_roi": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "template_line_rois": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          579,
+          348,
+          607
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          560
+        ],
+        [
+          1670.0,
+          560
+        ],
+        [
+          1670.0,
+          628
+        ],
+        [
+          130.0,
+          628
+        ]
+      ],
+      "original_bbox": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            560
+          ],
+          [
+            1670.0,
+            560
+          ],
+          [
+            1670.0,
+            628
+          ],
+          [
+            130.0,
+            628
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ]
+    },
+    "amount_words": {
+      "raw_text": "Seven thousand and twenty five only",
+      "value": "Seven thousand and twenty five only",
+      "template_roi": [
+        130,
+        725,
+        1670,
+        793
+      ],
+      "template_line_rois": [
+        [
+          130,
+          725,
+          1670,
+          793
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          143,
+          737,
+          731,
+          784
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          725
+        ],
+        [
+          1670.0,
+          725
+        ],
+        [
+          1670.0,
+          793
+        ],
+        [
+          130.0,
+          793
+        ]
+      ],
+      "original_bbox": [
+        130,
+        725,
+        1670,
+        793
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            725
+          ],
+          [
+            1670.0,
+            725
+          ],
+          [
+            1670.0,
+            793
+          ],
+          [
+            130.0,
+            793
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          725,
+          1670,
+          793
+        ]
+      ]
+    },
+    "amount": {
+      "raw_text": "7025.00",
+      "value": "7025.00",
+      "template_roi": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "template_line_rois": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          145,
+          908,
+          286,
+          937
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          890
+        ],
+        [
+          1670.0,
+          890
+        ],
+        [
+          1670.0,
+          958
+        ],
+        [
+          130.0,
+          958
+        ]
+      ],
+      "original_bbox": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            890
+          ],
+          [
+            1670.0,
+            890
+          ],
+          [
+            1670.0,
+            958
+          ],
+          [
+            130.0,
+            958
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ]
+    },
+    "currency": {
+      "raw_text": "INR",
+      "value": "INR",
+      "template_roi": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          144,
+          1066,
+          222,
+          1105
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1055
+        ],
+        [
+          1670.0,
+          1055
+        ],
+        [
+          1670.0,
+          1123
+        ],
+        [
+          130.0,
+          1123
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1055
+          ],
+          [
+            1670.0,
+            1055
+          ],
+          [
+            1670.0,
+            1123
+          ],
+          [
+            130.0,
+            1123
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ]
+    },
+    "cheque_number": {
+      "raw_text": "000007",
+      "value": "000007",
+      "template_roi": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          158,
+          1242,
+          181,
+          1266
+        ],
+        [
+          223,
+          1242,
+          246,
+          1266
+        ],
+        [
+          288,
+          1242,
+          311,
+          1266
+        ],
+        [
+          353,
+          1242,
+          376,
+          1266
+        ],
+        [
+          418,
+          1242,
+          441,
+          1266
+        ],
+        [
+          483,
+          1240,
+          507,
+          1267
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1220
+        ],
+        [
+          1670.0,
+          1220
+        ],
+        [
+          1670.0,
+          1288
+        ],
+        [
+          130.0,
+          1288
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1220
+          ],
+          [
+            1670.0,
+            1220
+          ],
+          [
+            1670.0,
+            1288
+          ],
+          [
+            130.0,
+            1288
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ]
+    },
+    "crossed": {
+      "raw_text": null,
+      "value": true,
+      "template_roi": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "checkbox",
+      "original_polygon": [
+        [
+          130.0,
+          1385
+        ],
+        [
+          1670.0,
+          1385
+        ],
+        [
+          1670.0,
+          1453
+        ],
+        [
+          130.0,
+          1453
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1385
+          ],
+          [
+            1670.0,
+            1385
+          ],
+          [
+            1670.0,
+            1453
+          ],
+          [
+            130.0,
+            1453
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ]
+    },
+    "declaration_date": {
+      "raw_text": "2026-10-15",
+      "value": "2026-10-15",
+      "template_roi": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          144,
+          1569,
+          350,
+          1597
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1550
+        ],
+        [
+          1670.0,
+          1550
+        ],
+        [
+          1670.0,
+          1618
+        ],
+        [
+          130.0,
+          1618
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1550
+          ],
+          [
+            1670.0,
+            1550
+          ],
+          [
+            1670.0,
+            1618
+          ],
+          [
+            130.0,
+            1618
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ]
+    },
+    "signature_present": {
+      "raw_text": null,
+      "value": true,
+      "template_roi": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "checkbox",
+      "original_polygon": [
+        [
+          130.0,
+          1715
+        ],
+        [
+          1670.0,
+          1715
+        ],
+        [
+          1670.0,
+          1783
+        ],
+        [
+          130.0,
+          1783
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1715
+          ],
+          [
+            1670.0,
+            1715
+          ],
+          [
+            1670.0,
+            1783
+          ],
+          [
+            130.0,
+            1783
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ]
+    }
+  }
+}

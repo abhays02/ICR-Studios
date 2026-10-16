@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:icr-bank:synthetic:kyc:1.0.0",
+  "title": "KYC business fields (draft permits null; final review validates completion)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "full_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "date_of_birth": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "identity_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "consent": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "declaration_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "signature_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "full_name",
+    "date_of_birth",
+    "address",
+    "phone",
+    "email",
+    "identity_reference",
+    "consent",
+    "declaration_date",
+    "signature_present"
+  ]
+}

@@ -1,0 +1,39 @@
+[
+  {
+    "file": "Caveat.ttf",
+    "sha256": "0bdb6b660482d31531b3945849fba5916b3ef8695da7024a9e6b9ee3c4157988",
+    "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/Caveat%5Bwght%5D.ttf",
+    "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+    "license": "OFL-1.1"
+  },
+  {
+    "file": "Caveat-OFL.txt",
+    "sha256": "1f9d81d094273d82f3898a1ee8b598a717d050ecbf5ff7bede105b704880157b",
+    "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/OFL.txt",
+    "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+    "license": "OFL-1.1"
+  },
+  {
+    "file": "Caveat-METADATA.pb",
+    "sha256": "038342ea08d3f09e11b7f08cfd1e1d556b4f56a48269b0909395aa6fecd4c4f7",
+    "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/METADATA.pb",
+    "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+    "license": "OFL-1.1"
+  },
+  {
+    "file": "DejaVuSans.ttf",
+    "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+    "source": "https://dejavu-fonts.github.io/",
+    "local_source": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "revision": null,
+    "license": "Bitstream-Vera (DejaVu changes public domain)"
+  },
+  {
+    "file": "DejaVu-NOTICES.txt",
+    "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+    "source": "https://dejavu-fonts.github.io/",
+    "local_source": "/usr/share/doc/fonts-dejavu-core/copyright",
+    "revision": null,
+    "license": "Bitstream-Vera (DejaVu changes public domain)"
+  }
+]

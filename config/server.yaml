@@ -1,0 +1,5 @@
+schema_version: 1
+mode: server
+host: 0.0.0.0
+local_only: true
+# Requires ICR_TOKENS, ICR_KEYS, ICR_ACTIVE_KEY and a TLS/rate-limiting reverse proxy.

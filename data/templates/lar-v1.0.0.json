@@ -1,0 +1,293 @@
+{
+  "template_id": "synthetic-lar",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "LAR",
+  "page": 1,
+  "width_px": 1800,
+  "height_px": 2400,
+  "coordinate_space": "template_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "synthetic": true,
+  "fields": [
+    {
+      "field_id": "full_name",
+      "label": "Full name",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ]
+    },
+    {
+      "field_id": "date_of_birth",
+      "label": "Date of birth (YYYY-MM-DD)",
+      "type": "date",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        525,
+        1670,
+        593
+      ],
+      "line_rois": [
+        [
+          130,
+          525,
+          1670,
+          593
+        ]
+      ]
+    },
+    {
+      "field_id": "address",
+      "label": "Address (two explicit lines)",
+      "type": "multiline",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        655,
+        1670,
+        765
+      ],
+      "line_rois": [
+        [
+          130,
+          655,
+          1670,
+          707
+        ],
+        [
+          130,
+          711,
+          1670,
+          765
+        ]
+      ]
+    },
+    {
+      "field_id": "phone",
+      "label": "Phone (reserved fictional range)",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        785,
+        1670,
+        853
+      ],
+      "line_rois": [
+        [
+          130,
+          785,
+          1670,
+          853
+        ]
+      ]
+    },
+    {
+      "field_id": "email",
+      "label": "Email",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        915,
+        1670,
+        983
+      ],
+      "line_rois": [
+        [
+          130,
+          915,
+          1670,
+          983
+        ]
+      ]
+    },
+    {
+      "field_id": "requested_amount",
+      "label": "Requested amount",
+      "type": "decimal",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1045,
+        1670,
+        1113
+      ],
+      "line_rois": [
+        [
+          130,
+          1045,
+          1670,
+          1113
+        ]
+      ]
+    },
+    {
+      "field_id": "currency",
+      "label": "Currency",
+      "type": "enum",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1175,
+        1670,
+        1243
+      ],
+      "line_rois": [
+        [
+          130,
+          1175,
+          1670,
+          1243
+        ]
+      ]
+    },
+    {
+      "field_id": "tenure_months",
+      "label": "Tenure in months (comb boxes)",
+      "type": "comb",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1305,
+        1670,
+        1373
+      ],
+      "line_rois": [
+        [
+          130,
+          1305,
+          1670,
+          1373
+        ]
+      ]
+    },
+    {
+      "field_id": "annual_income",
+      "label": "Annual income",
+      "type": "decimal",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1435,
+        1670,
+        1503
+      ],
+      "line_rois": [
+        [
+          130,
+          1435,
+          1670,
+          1503
+        ]
+      ]
+    },
+    {
+      "field_id": "employment_type",
+      "label": "Employment type",
+      "type": "enum",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1565,
+        1670,
+        1633
+      ],
+      "line_rois": [
+        [
+          130,
+          1565,
+          1670,
+          1633
+        ]
+      ]
+    },
+    {
+      "field_id": "purpose",
+      "label": "Loan purpose",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1695,
+        1670,
+        1763
+      ],
+      "line_rois": [
+        [
+          130,
+          1695,
+          1670,
+          1763
+        ]
+      ]
+    },
+    {
+      "field_id": "declaration_date",
+      "label": "Declaration date",
+      "type": "date",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1825,
+        1670,
+        1893
+      ],
+      "line_rois": [
+        [
+          130,
+          1825,
+          1670,
+          1893
+        ]
+      ]
+    },
+    {
+      "field_id": "signature_present",
+      "label": "Synthetic declaration checkbox (not signature verification)",
+      "type": "checkbox",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1955,
+        1670,
+        2023
+      ],
+      "line_rois": [
+        [
+          130,
+          1955,
+          1670,
+          2023
+        ]
+      ]
+    }
+  ]
+}

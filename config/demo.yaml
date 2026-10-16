@@ -1,0 +1,5 @@
+schema_version: 1
+mode: demo
+device: cpu
+local_only: true
+retention_days: 1

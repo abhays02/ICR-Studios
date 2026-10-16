@@ -1,0 +1,224 @@
+{
+  "template_id": "synthetic-rtgs",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "RTGS",
+  "page": 1,
+  "width_px": 1800,
+  "height_px": 2400,
+  "coordinate_space": "template_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "synthetic": true,
+  "fields": [
+    {
+      "field_id": "sender_name",
+      "label": "Sender",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ]
+    },
+    {
+      "field_id": "beneficiary_name",
+      "label": "Beneficiary",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "line_rois": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ]
+    },
+    {
+      "field_id": "account_number",
+      "label": "TEST account (comb boxes; not routable)",
+      "type": "comb",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        725,
+        1670,
+        793
+      ],
+      "line_rois": [
+        [
+          130,
+          725,
+          1670,
+          793
+        ]
+      ]
+    },
+    {
+      "field_id": "routing_code",
+      "label": "TEST routing code (deliberately invalid)",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "line_rois": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ]
+    },
+    {
+      "field_id": "amount",
+      "label": "Amount in figures",
+      "type": "decimal",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "line_rois": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ]
+    },
+    {
+      "field_id": "amount_words",
+      "label": "Amount in words (script-font rendering)",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "line_rois": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ]
+    },
+    {
+      "field_id": "currency",
+      "label": "Currency",
+      "type": "enum",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "line_rois": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ]
+    },
+    {
+      "field_id": "authorized",
+      "label": "Demo confirmation checkbox",
+      "type": "checkbox",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "line_rois": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ]
+    },
+    {
+      "field_id": "declaration_date",
+      "label": "Declaration date",
+      "type": "date",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "line_rois": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ]
+    },
+    {
+      "field_id": "signature_present",
+      "label": "Synthetic declaration checkbox (not signature verification)",
+      "type": "checkbox",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1880,
+        1670,
+        1948
+      ],
+      "line_rois": [
+        [
+          130,
+          1880,
+          1670,
+          1948
+        ]
+      ]
+    }
+  ]
+}
