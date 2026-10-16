@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import delete, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.routing import Match, Route, Router
 from starlette.staticfiles import StaticFiles
 
 from .config import HOT_KEYS, Settings, load_settings
@@ -612,6 +613,21 @@ def create_app(settings=None, keys=None, principals=None, worker_target=None, co
     def retention(principal=Depends(admin)):
         prune()
         return {"status": "retention_applied"}
+
+    api_routes = tuple(app.routes)
+
+    async def missing_api(scope, receive, send):
+        # Preserve known routes' method handling before the all-method API fallback.
+        for route in api_routes:
+            match, child_scope = route.matches(scope)
+            if match == Match.PARTIAL:
+                scope.update(child_scope)
+                await route.handle(scope, receive, send)
+                return
+        error("Not Found", 404)
+
+    api_fallback = Router(default=missing_api)
+    app.router.routes.extend([Route("/api", api_fallback), Route("/api/{path:path}", api_fallback)])
 
     studio = ROOT / "studio" / "dist"
     if studio.is_dir():
