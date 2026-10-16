@@ -1,0 +1,771 @@
+{
+  "sample_id": "06-car-skew-invalid",
+  "synthetic": true,
+  "is_real_handwriting": false,
+  "template_id": "synthetic-car",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "CAR",
+  "width_px": 1800,
+  "height_px": 2400,
+  "page": 1,
+  "coordinate_space": "original_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "image_sha256": "0b77df18cf2b88c8d431e4581010705467b65573f01596449e83894db4ce4d2b",
+  "template_to_image": [
+    [
+      1,
+      0.012,
+      -14.4
+    ],
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "alignment_required": true,
+  "expected_validation_issues": [
+    "invalid_calendar_date"
+  ],
+  "fields": {
+    "full_name": {
+      "raw_text": "Fictional Applicant ALPHA",
+      "value": "Fictional Applicant ALPHA",
+      "template_roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "template_line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          145,
+          407,
+          579,
+          452
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          120.34,
+          395
+        ],
+        [
+          1660.34,
+          395
+        ],
+        [
+          1661.156,
+          463
+        ],
+        [
+          121.156,
+          463
+        ]
+      ],
+      "original_bbox": [
+        120,
+        395,
+        1662,
+        463
+      ],
+      "original_line_polygons": [
+        [
+          [
+            120.34,
+            395
+          ],
+          [
+            1660.34,
+            395
+          ],
+          [
+            1661.156,
+            463
+          ],
+          [
+            121.156,
+            463
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          120,
+          395,
+          1662,
+          463
+        ]
+      ]
+    },
+    "date_of_birth": {
+      "raw_text": "1991-02-30",
+      "value": "1991-02-30",
+      "template_roi": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "template_line_rois": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          144,
+          579,
+          350,
+          608
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          122.32,
+          560
+        ],
+        [
+          1662.32,
+          560
+        ],
+        [
+          1663.136,
+          628
+        ],
+        [
+          123.136,
+          628
+        ]
+      ],
+      "original_bbox": [
+        122,
+        560,
+        1664,
+        628
+      ],
+      "original_line_polygons": [
+        [
+          [
+            122.32,
+            560
+          ],
+          [
+            1662.32,
+            560
+          ],
+          [
+            1663.136,
+            628
+          ],
+          [
+            123.136,
+            628
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          122,
+          560,
+          1664,
+          628
+        ]
+      ]
+    },
+    "address": {
+      "raw_text": "17 Imaginary Lane\nExample Test District",
+      "value": "17 Imaginary Lane\nExample Test District",
+      "template_roi": [
+        130,
+        725,
+        1670,
+        835
+      ],
+      "template_line_rois": [
+        [
+          130,
+          725,
+          1670,
+          777
+        ],
+        [
+          130,
+          781,
+          1670,
+          835
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          143,
+          736,
+          419,
+          776
+        ],
+        [
+          145,
+          792,
+          458,
+          831
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          124.3,
+          725
+        ],
+        [
+          1664.3,
+          725
+        ],
+        [
+          1665.62,
+          835
+        ],
+        [
+          125.62,
+          835
+        ]
+      ],
+      "original_bbox": [
+        124,
+        725,
+        1666,
+        835
+      ],
+      "original_line_polygons": [
+        [
+          [
+            124.3,
+            725
+          ],
+          [
+            1664.3,
+            725
+          ],
+          [
+            1664.924,
+            777
+          ],
+          [
+            124.924,
+            777
+          ]
+        ],
+        [
+          [
+            124.972,
+            781
+          ],
+          [
+            1664.972,
+            781
+          ],
+          [
+            1665.62,
+            835
+          ],
+          [
+            125.62,
+            835
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          124,
+          725,
+          1665,
+          777
+        ],
+        [
+          124,
+          781,
+          1666,
+          835
+        ]
+      ]
+    },
+    "phone": {
+      "raw_text": "+1 202 555 0107",
+      "value": "+1 202 555 0107",
+      "template_roi": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "template_line_rois": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          908,
+          438,
+          937
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          126.28,
+          890
+        ],
+        [
+          1666.28,
+          890
+        ],
+        [
+          1667.096,
+          958
+        ],
+        [
+          127.096,
+          958
+        ]
+      ],
+      "original_bbox": [
+        126,
+        890,
+        1668,
+        958
+      ],
+      "original_line_polygons": [
+        [
+          [
+            126.28,
+            890
+          ],
+          [
+            1666.28,
+            890
+          ],
+          [
+            1667.096,
+            958
+          ],
+          [
+            127.096,
+            958
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          126,
+          890,
+          1668,
+          958
+        ]
+      ]
+    },
+    "email": {
+      "raw_text": "alpha@example.invalid",
+      "value": "alpha@example.invalid",
+      "template_roi": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          145,
+          1069,
+          505,
+          1112
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          128.26,
+          1055
+        ],
+        [
+          1668.26,
+          1055
+        ],
+        [
+          1669.076,
+          1123
+        ],
+        [
+          129.076,
+          1123
+        ]
+      ],
+      "original_bbox": [
+        128,
+        1055,
+        1670,
+        1123
+      ],
+      "original_line_polygons": [
+        [
+          [
+            128.26,
+            1055
+          ],
+          [
+            1668.26,
+            1055
+          ],
+          [
+            1669.076,
+            1123
+          ],
+          [
+            129.076,
+            1123
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          128,
+          1055,
+          1670,
+          1123
+        ]
+      ]
+    },
+    "account_type": {
+      "raw_text": "savings",
+      "value": "savings",
+      "template_roi": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          1240,
+          262,
+          1276
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.24,
+          1220
+        ],
+        [
+          1670.24,
+          1220
+        ],
+        [
+          1671.056,
+          1288
+        ],
+        [
+          131.056,
+          1288
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1220,
+        1672,
+        1288
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.24,
+            1220
+          ],
+          [
+            1670.24,
+            1220
+          ],
+          [
+            1671.056,
+            1288
+          ],
+          [
+            131.056,
+            1288
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1220,
+          1672,
+          1288
+        ]
+      ]
+    },
+    "tax_identifier": {
+      "raw_text": "",
+      "value": "",
+      "template_roi": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          132.22,
+          1385
+        ],
+        [
+          1672.22,
+          1385
+        ],
+        [
+          1673.036,
+          1453
+        ],
+        [
+          133.036,
+          1453
+        ]
+      ],
+      "original_bbox": [
+        132,
+        1385,
+        1674,
+        1453
+      ],
+      "original_line_polygons": [
+        [
+          [
+            132.22,
+            1385
+          ],
+          [
+            1672.22,
+            1385
+          ],
+          [
+            1673.036,
+            1453
+          ],
+          [
+            133.036,
+            1453
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          132,
+          1385,
+          1674,
+          1453
+        ]
+      ]
+    },
+    "declaration_date": {
+      "raw_text": "2026-10-15",
+      "value": "2026-10-15",
+      "template_roi": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          1569,
+          348,
+          1597
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          134.2,
+          1550
+        ],
+        [
+          1674.2,
+          1550
+        ],
+        [
+          1675.016,
+          1618
+        ],
+        [
+          135.016,
+          1618
+        ]
+      ],
+      "original_bbox": [
+        134,
+        1550,
+        1676,
+        1618
+      ],
+      "original_line_polygons": [
+        [
+          [
+            134.2,
+            1550
+          ],
+          [
+            1674.2,
+            1550
+          ],
+          [
+            1675.016,
+            1618
+          ],
+          [
+            135.016,
+            1618
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          134,
+          1550,
+          1676,
+          1618
+        ]
+      ]
+    },
+    "signature_present": {
+      "raw_text": null,
+      "value": true,
+      "template_roi": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "checkbox",
+      "original_polygon": [
+        [
+          136.18,
+          1715
+        ],
+        [
+          1676.18,
+          1715
+        ],
+        [
+          1676.996,
+          1783
+        ],
+        [
+          136.996,
+          1783
+        ]
+      ],
+      "original_bbox": [
+        136,
+        1715,
+        1677,
+        1783
+      ],
+      "original_line_polygons": [
+        [
+          [
+            136.18,
+            1715
+          ],
+          [
+            1676.18,
+            1715
+          ],
+          [
+            1676.996,
+            1783
+          ],
+          [
+            136.996,
+            1783
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          136,
+          1715,
+          1677,
+          1783
+        ]
+      ]
+    }
+  }
+}

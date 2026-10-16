@@ -1,0 +1,209 @@
+{
+  "template_id": "synthetic-car",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "CAR",
+  "page": 1,
+  "width_px": 1800,
+  "height_px": 2400,
+  "coordinate_space": "template_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "synthetic": true,
+  "fields": [
+    {
+      "field_id": "full_name",
+      "label": "Full name",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ]
+    },
+    {
+      "field_id": "date_of_birth",
+      "label": "Date of birth (YYYY-MM-DD)",
+      "type": "date",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "line_rois": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ]
+    },
+    {
+      "field_id": "address",
+      "label": "Address (two explicit lines)",
+      "type": "multiline",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        725,
+        1670,
+        835
+      ],
+      "line_rois": [
+        [
+          130,
+          725,
+          1670,
+          777
+        ],
+        [
+          130,
+          781,
+          1670,
+          835
+        ]
+      ]
+    },
+    {
+      "field_id": "phone",
+      "label": "Phone (reserved fictional range)",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "line_rois": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ]
+    },
+    {
+      "field_id": "email",
+      "label": "Email",
+      "type": "text",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "line_rois": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ]
+    },
+    {
+      "field_id": "account_type",
+      "label": "Account type",
+      "type": "enum",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "line_rois": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ]
+    },
+    {
+      "field_id": "tax_identifier",
+      "label": "Optional tax identifier (intentionally blank)",
+      "type": "text",
+      "required": false,
+      "page": 1,
+      "roi": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "line_rois": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ]
+    },
+    {
+      "field_id": "declaration_date",
+      "label": "Declaration date",
+      "type": "date",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "line_rois": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ]
+    },
+    {
+      "field_id": "signature_present",
+      "label": "Synthetic declaration checkbox (not signature verification)",
+      "type": "checkbox",
+      "required": true,
+      "page": 1,
+      "roi": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "line_rois": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ]
+    }
+  ]
+}

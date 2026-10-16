@@ -1,0 +1,769 @@
+{
+  "sample_id": "01-car",
+  "synthetic": true,
+  "is_real_handwriting": false,
+  "template_id": "synthetic-car",
+  "template_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "form_kind": "CAR",
+  "width_px": 1800,
+  "height_px": 2400,
+  "page": 1,
+  "coordinate_space": "original_pixels",
+  "bbox_convention": "half_open_xyxy",
+  "image_sha256": "70ae432b9bf6ae3757c5b93b0902170fc58f74e63820d75be7901f5c4e0f01fa",
+  "template_to_image": [
+    [
+      1,
+      0.0,
+      -0.0
+    ],
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "alignment_required": false,
+  "expected_validation_issues": [],
+  "fields": {
+    "full_name": {
+      "raw_text": "Fictional Applicant ALPHA",
+      "value": "Fictional Applicant ALPHA",
+      "template_roi": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "template_line_rois": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          143,
+          407,
+          577,
+          452
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          395
+        ],
+        [
+          1670.0,
+          395
+        ],
+        [
+          1670.0,
+          463
+        ],
+        [
+          130.0,
+          463
+        ]
+      ],
+      "original_bbox": [
+        130,
+        395,
+        1670,
+        463
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            395
+          ],
+          [
+            1670.0,
+            395
+          ],
+          [
+            1670.0,
+            463
+          ],
+          [
+            130.0,
+            463
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          395,
+          1670,
+          463
+        ]
+      ]
+    },
+    "date_of_birth": {
+      "raw_text": "1991-04-18",
+      "value": "1991-04-18",
+      "template_roi": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "template_line_rois": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          143,
+          579,
+          351,
+          608
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          560
+        ],
+        [
+          1670.0,
+          560
+        ],
+        [
+          1670.0,
+          628
+        ],
+        [
+          130.0,
+          628
+        ]
+      ],
+      "original_bbox": [
+        130,
+        560,
+        1670,
+        628
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            560
+          ],
+          [
+            1670.0,
+            560
+          ],
+          [
+            1670.0,
+            628
+          ],
+          [
+            130.0,
+            628
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          560,
+          1670,
+          628
+        ]
+      ]
+    },
+    "address": {
+      "raw_text": "17 Imaginary Lane\nExample Test District",
+      "value": "17 Imaginary Lane\nExample Test District",
+      "template_roi": [
+        130,
+        725,
+        1670,
+        835
+      ],
+      "template_line_rois": [
+        [
+          130,
+          725,
+          1670,
+          777
+        ],
+        [
+          130,
+          781,
+          1670,
+          835
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          145,
+          736,
+          421,
+          776
+        ],
+        [
+          145,
+          792,
+          458,
+          831
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          725
+        ],
+        [
+          1670.0,
+          725
+        ],
+        [
+          1670.0,
+          835
+        ],
+        [
+          130.0,
+          835
+        ]
+      ],
+      "original_bbox": [
+        130,
+        725,
+        1670,
+        835
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            725
+          ],
+          [
+            1670.0,
+            725
+          ],
+          [
+            1670.0,
+            777
+          ],
+          [
+            130.0,
+            777
+          ]
+        ],
+        [
+          [
+            130.0,
+            781
+          ],
+          [
+            1670.0,
+            781
+          ],
+          [
+            1670.0,
+            835
+          ],
+          [
+            130.0,
+            835
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          725,
+          1670,
+          777
+        ],
+        [
+          130,
+          781,
+          1670,
+          835
+        ]
+      ]
+    },
+    "phone": {
+      "raw_text": "+1 202 555 0107",
+      "value": "+1 202 555 0107",
+      "template_roi": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "template_line_rois": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          908,
+          438,
+          937
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          890
+        ],
+        [
+          1670.0,
+          890
+        ],
+        [
+          1670.0,
+          958
+        ],
+        [
+          130.0,
+          958
+        ]
+      ],
+      "original_bbox": [
+        130,
+        890,
+        1670,
+        958
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            890
+          ],
+          [
+            1670.0,
+            890
+          ],
+          [
+            1670.0,
+            958
+          ],
+          [
+            130.0,
+            958
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          890,
+          1670,
+          958
+        ]
+      ]
+    },
+    "email": {
+      "raw_text": "alpha@example.invalid",
+      "value": "alpha@example.invalid",
+      "template_roi": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          1069,
+          502,
+          1112
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1055
+        ],
+        [
+          1670.0,
+          1055
+        ],
+        [
+          1670.0,
+          1123
+        ],
+        [
+          130.0,
+          1123
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1055,
+        1670,
+        1123
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1055
+          ],
+          [
+            1670.0,
+            1055
+          ],
+          [
+            1670.0,
+            1123
+          ],
+          [
+            130.0,
+            1123
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1055,
+          1670,
+          1123
+        ]
+      ]
+    },
+    "account_type": {
+      "raw_text": "savings",
+      "value": "savings",
+      "template_roi": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          142,
+          1240,
+          262,
+          1276
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1220
+        ],
+        [
+          1670.0,
+          1220
+        ],
+        [
+          1670.0,
+          1288
+        ],
+        [
+          130.0,
+          1288
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1220,
+        1670,
+        1288
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1220
+          ],
+          [
+            1670.0,
+            1220
+          ],
+          [
+            1670.0,
+            1288
+          ],
+          [
+            130.0,
+            1288
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1220,
+          1670,
+          1288
+        ]
+      ]
+    },
+    "tax_identifier": {
+      "raw_text": "",
+      "value": "",
+      "template_roi": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1385
+        ],
+        [
+          1670.0,
+          1385
+        ],
+        [
+          1670.0,
+          1453
+        ],
+        [
+          130.0,
+          1453
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1385,
+        1670,
+        1453
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1385
+          ],
+          [
+            1670.0,
+            1385
+          ],
+          [
+            1670.0,
+            1453
+          ],
+          [
+            130.0,
+            1453
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1385,
+          1670,
+          1453
+        ]
+      ]
+    },
+    "declaration_date": {
+      "raw_text": "2026-10-15",
+      "value": "2026-10-15",
+      "template_roi": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ],
+      "template_ink_bboxes": [
+        [
+          145,
+          1569,
+          351,
+          1597
+        ]
+      ],
+      "rendering": "font",
+      "original_polygon": [
+        [
+          130.0,
+          1550
+        ],
+        [
+          1670.0,
+          1550
+        ],
+        [
+          1670.0,
+          1618
+        ],
+        [
+          130.0,
+          1618
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1550,
+        1670,
+        1618
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1550
+          ],
+          [
+            1670.0,
+            1550
+          ],
+          [
+            1670.0,
+            1618
+          ],
+          [
+            130.0,
+            1618
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1550,
+          1670,
+          1618
+        ]
+      ]
+    },
+    "signature_present": {
+      "raw_text": null,
+      "value": true,
+      "template_roi": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "template_line_rois": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ],
+      "template_ink_bboxes": [],
+      "rendering": "checkbox",
+      "original_polygon": [
+        [
+          130.0,
+          1715
+        ],
+        [
+          1670.0,
+          1715
+        ],
+        [
+          1670.0,
+          1783
+        ],
+        [
+          130.0,
+          1783
+        ]
+      ],
+      "original_bbox": [
+        130,
+        1715,
+        1670,
+        1783
+      ],
+      "original_line_polygons": [
+        [
+          [
+            130.0,
+            1715
+          ],
+          [
+            1670.0,
+            1715
+          ],
+          [
+            1670.0,
+            1783
+          ],
+          [
+            130.0,
+            1783
+          ]
+        ]
+      ],
+      "original_line_bboxes": [
+        [
+          130,
+          1715,
+          1670,
+          1783
+        ]
+      ]
+    }
+  }
+}

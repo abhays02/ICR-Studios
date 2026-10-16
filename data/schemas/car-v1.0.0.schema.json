@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:icr-bank:synthetic:car:1.0.0",
+  "title": "CAR business fields (draft permits null; final review validates completion)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "full_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "date_of_birth": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "account_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "enum": [
+        "savings",
+        "current",
+        null
+      ]
+    },
+    "tax_identifier": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "declaration_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500,
+      "format": "date"
+    },
+    "signature_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "full_name",
+    "date_of_birth",
+    "address",
+    "phone",
+    "email",
+    "account_type",
+    "declaration_date",
+    "signature_present"
+  ]
+}

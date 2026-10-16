@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""Explicit opt-in HF provisioning; immutable revision, safe-file inventory, no code."""
+import argparse
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from backend.app.config import private_dir
+from backend.app.ledger import Ledger
+from backend.app.ocr import MODEL_ID, ModelError, digest_file, verify_snapshot
+
+
+def fetch_json(url):
+    with urllib.request.urlopen(url, timeout=20) as response:
+        raw = response.read(2 * 1024 * 1024 + 1)
+        if len(raw) > 2 * 1024 * 1024:
+            raise ValueError("metadata_size_limit")
+        return json.loads(raw)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--directory", default="var/models/microsoft-trocr")
+    parser.add_argument("--model-id", default=MODEL_ID, choices=[MODEL_ID])
+    parser.add_argument("--download", action="store_true", help="Explicit network/weight download opt-in")
+    parser.add_argument("--approve-license", help="Exact license identifier after independently reviewing model card/terms")
+    parser.add_argument("--verify", action="store_true", help="Offline checksum/license/identity verifier")
+    args = parser.parse_args()
+    path = Path(args.directory)
+    try:
+        if args.verify:
+            manifest = verify_snapshot(path)
+            print(json.dumps({"status": "verified", "model_id": manifest["model_id"],
+                              "revision": manifest["revision"], "inference_tested": False}))
+            return 0
+        if not args.download or not args.approve_license:
+            parser.error("--download and explicit --approve-license are required; default performs no network")
+        path = private_dir(path)
+        # A process-shared claim prevents competing writers; manifest is published last.
+        ledger = Ledger(path.parent / (path.name + "-provisioning"))
+        with ledger.locked():
+            if (path / "manifest.json").exists():
+                raise ValueError("destination_already_provisioned")
+            metadata = fetch_json("https://huggingface.co/api/models/" + MODEL_ID)
+            revision = metadata["sha"]
+            if not re.fullmatch(r"[a-f0-9]{40}", revision):
+                raise ValueError("immutable_revision_missing")
+            metadata = fetch_json("https://huggingface.co/api/models/" + MODEL_ID + "/revision/" + revision)
+            license_id = metadata.get("cardData", {}).get("license")
+            if not re.fullmatch(r"[a-f0-9]{40}", revision):
+                raise ValueError("immutable_revision_missing")
+            if not isinstance(license_id, str) or license_id != args.approve_license:
+                raise ValueError("license_missing_or_not_approved")
+            names = [item["rfilename"] for item in metadata["siblings"]]
+            # Flat known data only. Pick safetensors, never pickle or downloaded Python.
+            allowed = [name for name in names if "/" not in name and
+                       (name.endswith((".json", ".safetensors", ".txt")) or name in ("README.md", "LICENSE"))]
+            if not any(name.endswith(".safetensors") for name in allowed):
+                raise ValueError("safe_weights_not_available")
+            if "README.md" not in allowed or "config.json" not in allowed:
+                raise ValueError("card_or_config_missing")
+            files, total = {}, 0
+            started = time.monotonic()
+            for name in allowed:
+                if not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or name.startswith("."):
+                    raise ValueError("unsafe_artifact_name")
+                url = f"https://huggingface.co/{MODEL_ID}/resolve/{revision}/{urllib.parse.quote(name)}"
+                destination = path / name
+                part = path / f".{name}.{os.getpid()}.part"
+                try:
+                    with urllib.request.urlopen(url, timeout=30) as response, os.fdopen(
+                            os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as out:
+                        size = 0
+                        while chunk := response.read(1024 * 1024):
+                            size += len(chunk)
+                            total += len(chunk)
+                            if size > 3 * 1024**3 or total > 5 * 1024**3 or time.monotonic() - started > 1800:
+                                raise ValueError("download_size_limit")
+                            out.write(chunk)
+                        out.flush()
+                        os.fsync(out.fileno())
+                    os.replace(part, destination)
+                    files[name] = digest_file(destination)
+                finally:
+                    part.unlink(missing_ok=True)
+            manifest = {"schema_version": 1, "model_id": MODEL_ID, "revision": revision,
+                        "license": license_id, "operator_approved": True,
+                        "license_evidence": f"https://huggingface.co/{MODEL_ID}/blob/{revision}/README.md",
+                        "files": files, "inference_tested": False}
+            part = path / ".manifest.part"
+            with os.fdopen(os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as stream:
+                json.dump(manifest, stream, indent=2)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(part, path / "manifest.json")
+        # The ledger is not part of the model inventory.
+        verify_snapshot(path)
+        print(json.dumps({"status": "downloaded_verified", "revision": revision, "inference_tested": False}))
+        return 0
+    except ModelError as exc:
+        print(json.dumps({"status": "verification_failed", "code": exc.code,
+                          "model_id": MODEL_ID, "inference_tested": False}), file=sys.stderr)
+        return 2
+    except urllib.error.HTTPError as exc:
+        print(json.dumps({"status": "provisioning_incomplete", "code": f"http_{exc.code}",
+                          "model_id": MODEL_ID, "inference_tested": False}), file=sys.stderr)
+        return 2
+    except urllib.error.URLError:
+        print(json.dumps({"status": "provisioning_incomplete", "code": "network_unavailable",
+                          "model_id": MODEL_ID, "inference_tested": False}), file=sys.stderr)
+        return 2
+    except (OSError, ValueError, KeyError):
+        # Network exceptions may include host/path/auth data; never echo them.
+        print(json.dumps({"status": "provisioning_incomplete", "code": "network_license_or_artifact_failure",
+                          "model_id": MODEL_ID, "inference_tested": False}), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

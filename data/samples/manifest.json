@@ -1,0 +1,137 @@
+{
+  "manifest_version": "1.0.0",
+  "origin": "original synthetic fictional forms",
+  "license": "CC0-1.0 (original generated images, layouts and fictional annotations)",
+  "license_file": "LICENSE-CC0.txt",
+  "is_real_handwriting": false,
+  "warning": "Font-rendered simulation; no real handwriting accuracy evidence. Never use truth as OCR.",
+  "generator": "scripts/generate_samples",
+  "generator_sha256": "71d596fa6b0d086074ba27beae9804e35b31b5f3eeb6d1bb7345d314d0ba74a5",
+  "generation_seed": 20261015,
+  "pillow_version": "12.3.0",
+  "fonts": [
+    {
+      "file": "Caveat.ttf",
+      "sha256": "0bdb6b660482d31531b3945849fba5916b3ef8695da7024a9e6b9ee3c4157988",
+      "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/Caveat%5Bwght%5D.ttf",
+      "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+      "license": "OFL-1.1"
+    },
+    {
+      "file": "Caveat-OFL.txt",
+      "sha256": "1f9d81d094273d82f3898a1ee8b598a717d050ecbf5ff7bede105b704880157b",
+      "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/OFL.txt",
+      "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+      "license": "OFL-1.1"
+    },
+    {
+      "file": "Caveat-METADATA.pb",
+      "sha256": "038342ea08d3f09e11b7f08cfd1e1d556b4f56a48269b0909395aa6fecd4c4f7",
+      "source": "https://raw.githubusercontent.com/google/fonts/1d0e46c7933245c8180fe83e47917961c913bbdb/ofl/caveat/METADATA.pb",
+      "revision": "1d0e46c7933245c8180fe83e47917961c913bbdb",
+      "license": "OFL-1.1"
+    },
+    {
+      "file": "DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+      "source": "https://dejavu-fonts.github.io/",
+      "local_source": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "revision": null,
+      "license": "Bitstream-Vera (DejaVu changes public domain)"
+    },
+    {
+      "file": "DejaVu-NOTICES.txt",
+      "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+      "source": "https://dejavu-fonts.github.io/",
+      "local_source": "/usr/share/doc/fonts-dejavu-core/copyright",
+      "revision": null,
+      "license": "Bitstream-Vera (DejaVu changes public domain)"
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "01-car",
+      "image": "01-car.png",
+      "ground_truth": "01-car.ground_truth.json",
+      "image_sha256": "70ae432b9bf6ae3757c5b93b0902170fc58f74e63820d75be7901f5c4e0f01fa",
+      "ground_truth_sha256": "7bba560ec432e70f3a8db3496d3b776791dc03ea4340fb0e30c17a4d9d752bcf",
+      "bytes": 148038,
+      "template": "../templates/car-v1.0.0.json",
+      "form_kind": "CAR",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": false,
+      "seed": 20261015
+    },
+    {
+      "sample_id": "02-lar",
+      "image": "02-lar.png",
+      "ground_truth": "02-lar.ground_truth.json",
+      "image_sha256": "76645d0c1fa4dd15757531f26c908be92acb7922ad356a8be61d5c678f1ff26c",
+      "ground_truth_sha256": "2d13ea7e4e00b665e6d1db9bea995dc77c06933c4edd9eb4756fcbf318434c88",
+      "bytes": 181570,
+      "template": "../templates/lar-v1.0.0.json",
+      "form_kind": "LAR",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": false,
+      "seed": 20261016
+    },
+    {
+      "sample_id": "03-kyc",
+      "image": "03-kyc.png",
+      "ground_truth": "03-kyc.ground_truth.json",
+      "image_sha256": "d70f06445f241cf1a4e287ad2f9eda58a9a09de0ac37b2cef049da61a658f4c8",
+      "ground_truth_sha256": "9e5133fe167faa242dc5a1c0ae2eda38022dc1e4bd557e97fa41493bb0a3a2ec",
+      "bytes": 152114,
+      "template": "../templates/kyc-v1.0.0.json",
+      "form_kind": "KYC",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": false,
+      "seed": 20261017
+    },
+    {
+      "sample_id": "04-rtgs",
+      "image": "04-rtgs.png",
+      "ground_truth": "04-rtgs.ground_truth.json",
+      "image_sha256": "9a5eb5fcb461257db5b39c4b4953d04f2a6f08c489d3a3e7a544eaf24cea0d2c",
+      "ground_truth_sha256": "aea9725f239cbae9837f2eafb0c5134377538ff17f5f2de298bbe88d22f0ef1d",
+      "bytes": 171439,
+      "template": "../templates/rtgs-v1.0.0.json",
+      "form_kind": "RTGS",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": false,
+      "seed": 20261018
+    },
+    {
+      "sample_id": "05-cheque",
+      "image": "05-cheque.png",
+      "ground_truth": "05-cheque.ground_truth.json",
+      "image_sha256": "47aa6fbd8f5b71a1ada9ce3af3cfff3f7778465d3f024d3456b63a8ddc606ea1",
+      "ground_truth_sha256": "97f7f5afc27e552b75184e0bb9460f961d0384e6e5b343afc07f1e25e92fe118",
+      "bytes": 135625,
+      "template": "../templates/cheque-v1.0.0.json",
+      "form_kind": "CHEQUE",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": false,
+      "seed": 20261019
+    },
+    {
+      "sample_id": "06-car-skew-invalid",
+      "image": "06-car-skew-invalid.png",
+      "ground_truth": "06-car-skew-invalid.ground_truth.json",
+      "image_sha256": "0b77df18cf2b88c8d431e4581010705467b65573f01596449e83894db4ce4d2b",
+      "ground_truth_sha256": "ec7fdd7852bc40bdf0b971fa904d4d7a5a5abbdb3ea8cda4d6135142187dd81c",
+      "bytes": 362725,
+      "template": "../templates/car-v1.0.0.json",
+      "form_kind": "CAR",
+      "width_px": 1800,
+      "height_px": 2400,
+      "alignment_required": true,
+      "seed": 20261020
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+schema_version: 1
+device: mps
+dtype: float32
+local_only: true

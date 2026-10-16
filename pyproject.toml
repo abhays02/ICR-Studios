@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icr-bank"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "Offline-first encrypted banking transcription review service"
+dependencies = [
+  "fastapi==0.143.2", "uvicorn==0.54.0", "SQLAlchemy==2.1.4",
+  "cryptography==50.0.2", "pydantic==2.14.1", "PyYAML==6.0.3",
+  "Pillow==12.3.0", "pypdfium2==5.14.0",
+]
+
+[project.optional-dependencies]
+inference = ["torch==2.14.1", "transformers==5.20.0"]
+test = ["httpx==0.28.1"]
+
+[project.scripts]
+icr = "backend.app.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]

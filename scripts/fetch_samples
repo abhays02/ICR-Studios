@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Provision licensed fonts and attempt real MNIST handwriting (no model weights).
+
+Python 3.11+, standard library only. Run: ./scripts/fetch_samples
+Network is explicit; no application startup calls this script.
+"""
+import argparse
+import hashlib
+import json
+import re
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+FONT_REV = "1d0e46c7933245c8180fe83e47917961c913bbdb"
+FONT_BASE = f"https://raw.githubusercontent.com/google/fonts/{FONT_REV}/ofl/caveat"
+HF_ID = "ylecun/mnist"
+MAX_BYTES = 5 * 1024 * 1024
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def get(url, limit=MAX_BYTES):
+    request = urllib.request.Request(url, headers={"User-Agent": "ICR-bank-fixture-provisioner/1"})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        content = response.read(limit + 1)
+        if len(content) > limit:
+            raise ValueError("download exceeds byte budget")
+        return content
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=ROOT / "data")
+    parser.add_argument("--fonts-only", action="store_true")
+    args = parser.parse_args()
+    fonts = args.output / "fonts"
+    fonts.mkdir(parents=True, exist_ok=True)
+    records = []
+    for filename, remote in [("Caveat.ttf", "Caveat%5Bwght%5D.ttf"),
+                             ("Caveat-OFL.txt", "OFL.txt"),
+                             ("Caveat-METADATA.pb", "METADATA.pb")]:
+        url = f"{FONT_BASE}/{remote}"
+        body = get(url)
+        (fonts / filename).write_bytes(body)
+        records.append({"file": filename, "sha256": digest(body), "source": url,
+                        "revision": FONT_REV, "license": "OFL-1.1"})
+    # Explicit local fallback for labels: unmodified installed font + its notices.
+    source = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+    notice = Path("/usr/share/doc/fonts-dejavu-core/copyright")
+    if not source.is_file() or not notice.is_file():
+        raise SystemExit("Install system DejaVu Sans and its license notices before provisioning.")
+    for path, filename in [(source, "DejaVuSans.ttf"), (notice, "DejaVu-NOTICES.txt")]:
+        body = path.read_bytes()
+        (fonts / filename).write_bytes(body)
+        records.append({"file": filename, "sha256": digest(body),
+                        "source": "https://dejavu-fonts.github.io/",
+                        "local_source": str(path), "revision": None,
+                        "license": "Bitstream-Vera (DejaVu changes public domain)"})
+    (fonts / "manifest.json").write_text(json.dumps(records, indent=2) + "\n")
+    if args.fonts_only:
+        return
+
+    real = args.output / "real_handwriting"
+    real.mkdir(parents=True, exist_ok=True)
+    report = {"dataset_id": HF_ID, "retrieved_at": datetime.now(timezone.utc).isoformat(),
+              "status": "incomplete", "revision": None, "license": None,
+              "real_handwriting_downloaded": False, "attempts": [],
+              "scope": "MNIST real handwritten digits only; not bank-form or cursive evidence",
+              "attribution": "Yann LeCun, Corinna Cortes, Christopher J. C. Burges; MNIST"}
+    url = f"https://huggingface.co/api/datasets/{HF_ID}"
+    try:
+        metadata = json.loads(get(url, 1024 * 1024))
+        revision = metadata["sha"]
+        if not re.fullmatch(r"[0-9a-f]{40}", revision):
+            raise ValueError("upstream did not supply a complete revision")
+        report["revision"] = revision
+        card_url = f"https://huggingface.co/datasets/{HF_ID}/resolve/{revision}/README.md"
+        url = card_url
+        card = get(url, 256 * 1024)
+        # Do not infer dataset rights from its uploader or a code repository.
+        if not re.search(rb"(?m)^license:\s*cc-by-sa-3\.0\s*$", card):
+            raise ValueError("expected explicit cc-by-sa-3.0 card license; manual review required")
+        report["license"] = "CC-BY-SA-3.0"
+        report["license_source"] = card_url
+        tree_url = f"https://huggingface.co/api/datasets/{HF_ID}/tree/{revision}/mnist"
+        url = tree_url
+        entries = json.loads(get(url, 1024 * 1024))
+        tests = sorted(e["path"] for e in entries if e["path"].endswith(".parquet")
+                       and "test-" in e["path"] and e.get("size", MAX_BYTES + 1) <= MAX_BYTES)
+        if not tests:
+            raise ValueError("no bounded test Parquet found; refusing unbounded download")
+        artifact_url = (f"https://huggingface.co/datasets/{HF_ID}/resolve/{revision}/"
+                        + urllib.parse.quote(tests[0], safe="/"))
+        url = artifact_url
+        artifact = get(url)
+        if not artifact.startswith(b"PAR1") or not artifact.endswith(b"PAR1"):
+            raise ValueError("not a Parquet artifact")
+        (real / "README.upstream.md").write_bytes(card)
+        (real / "mnist-test.parquet").write_bytes(artifact)
+        report.update(status="downloaded_raw_artifact", real_handwriting_downloaded=True,
+                      artifact={"file": "mnist-test.parquet", "source": artifact_url,
+                                "sha256": digest(artifact), "bytes": len(artifact)},
+                      note="Raw test split; not extracted or used in synthetic bank forms. "
+                           "CC-BY-SA-3.0 applies; preserve upstream card and attribution.")
+        report["attempts"].append({"url": url, "outcome": "resolved pinned dataset"})
+    except (OSError, ValueError, KeyError, urllib.error.URLError) as error:
+        report["attempts"].append({"url": url, "outcome": "failed", "error": str(error),
+                                   "note": "Use revision/license members for partial evidence; "
+                                           "failure is not evidence of dataset absence."})
+        fallback_revision = "7477bafafc2029b41adb6b2ebf5033aeaacee71e"
+        fallback = (f"https://raw.githubusercontent.com/cvdfoundation/mnist/"
+                    f"{fallback_revision}/README.md")
+        try:
+            readme = get(fallback, 128 * 1024)
+            report["attempts"].append({
+                "url": fallback, "outcome": "official mirror README retrieved",
+                "revision": fallback_revision,
+                "sha256": digest(readme),
+                "note": "CVDF explicitly credits LeCun and links the same MNIST dataset. "
+                        "Repository contains README only; no GitHub-hosted image payload or "
+                        "dataset license. External storage links not followed. No data copied."})
+        except (OSError, ValueError, urllib.error.URLError) as fallback_error:
+            report["attempts"].append({"url": fallback, "outcome": "failed",
+                                       "error": str(fallback_error)})
+    (real / "fetch_report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps({"status": report["status"], "report": str(real / "fetch_report.json")}))
+    if not report["real_handwriting_downloaded"]:
+        raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()
