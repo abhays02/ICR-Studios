@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "vite --config vite.demo.config.ts --open /demo/index.html",
     "build": "tsc -b && vite build",
+    "build:demo": "tsc -b && vite build --config vite.demo.config.ts",
     "lint": "oxlint src",
     "test": "node --experimental-strip-types --test src/geometry.test.ts",
     "test:smoke": "node scripts/smoke.mjs",
@@ -16,12 +18,14 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "oxlint": "1.88.0",
     "playwright": "1.64.1",
+    "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.4"
   }

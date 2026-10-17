@@ -1,10 +1,28 @@
-# ICR-bank · local review Studio
+# ICR Studios · offline review + isolated web showcase
 
 Inspect form scans, save human corrections and export traceable results in a local React + FastAPI workspace.
 
 > **Manual-review prototype—not production-ready OCR.**
 > Working review flow; no bundled weights, validated handwriting accuracy or calibrated confidence.
 > [Implemented features and open gates →](docs/STATUS.md)
+
+The Studio now uses a charcoal/obsidian, neon-lime industrial workspace. The
+separate public showcase demonstrates the product direction and provides an
+explicitly consented Hugging Face Space workflow; it is **not** part of the
+offline application's runtime or build.
+
+- **Offline Studio:** existing local review, templates, encrypted storage and
+  local TrOCR adapter. No cloud inference or automatic model downloads.
+- **Web showcase:** separate `studio/src/demo/` frontend and `web_demo/` gateway,
+  with its own build and server. Uploads leave the device only after consent.
+- **Requested model roadmap:** upstream projects identify
+  [`lightonai/LightOnOCR-3-1B`](https://github.com/lightonai/LightOnOCR) (also
+  0.8B/4B variants) and
+  [`SeerRay-Lab/Xiaomi-OCR-0`](https://github.com/SeerRay-Lab/Xiaomi-OCR-0).
+  They remain candidate adapters here. Weight revisions, licenses, compatible
+  runtimes and evaluation must be established before local support is advertised.
+  Plug-in installation, two-model benchmarking and packaged Windows/macOS/CLI
+  downloads are not implemented by this UI redesign.
 
 ![Real Studio screenshot: a fictional CAR form with region overlays, an empty model-text field, one human correction and a failed local recognition job.](docs/media/studio-review.png)
 

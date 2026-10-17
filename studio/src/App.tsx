@@ -225,6 +225,25 @@ function UploadQueue({token,template,added,report}: {token:string;template:Templ
 
 type SettingsData={revision:number;values:Record<string,unknown>;sources:Record<string,string>;runtime_keys:string[]}
 type SchemaData={schema:{properties:Record<string,{type?:string;enum?:unknown[];description?:string;minimum?:number;maximum?:number}>};runtime_keys:string[];help:unknown}
+function ModelCatalog() {
+  return <section className="model-catalog" aria-labelledby="catalog-title">
+    <div className="section-heading"><div><span className="eyebrow">LOCAL MODEL HARNESS / CATALOG</span><h2 id="catalog-title">Adapters, not promises.</h2></div><span className="badge">OFFLINE ONLY</span></div>
+    <p>Implementation status is separate from artifact availability. This catalog does not install, download, run or benchmark models.</p>
+    <div className="model-grid">
+      <article className="model-card implemented"><span className="model-index">01 / IMPLEMENTED ADAPTER</span><h3>TrOCR</h3>
+        <code>microsoft/trocr-base-handwritten</code><p>The only implemented inference adapter. Approved local weights are required; missing weights fail explicitly.</p>
+        <span className="model-status">Readiness: see live API report below</span></article>
+      <article className="model-card"><span className="model-index">02 / REQUESTED CANDIDATE</span><h3>LightOnOCR 3</h3>
+        <span className="badge">NOT INTEGRATED</span><p>Requested name only. Exact upstream identity, version, license, local runtime and hardware requirements remain unverified.</p>
+        <span className="model-status">Pending identity & runtime verification</span></article>
+      <article className="model-card"><span className="model-index">03 / REQUESTED CANDIDATE</span><h3>Xiaomi OCR 0</h3>
+        <code>SeerRay-Lab/Xiaomi-OCR-0</code><p>Upstream identity confirmed: 0.8B, derived from Qwen3.5. No local adapter is implemented. Runtime compatibility remains unverified.</p>
+        <span className="badge">NOT INTEGRATED</span><p>The upstream Space is a project page and assets, not a verified inference endpoint. No inference URL is configured or guessed.</p>
+        <span className="model-status">Identity known / inference unavailable here</span></article>
+    </div>
+    <p className="caption">No measured comparison or accuracy claim is available. Candidate entries do not change job routing. No cloud requests or remote fallback.</p>
+  </section>
+}
 function SettingsPanel({api,report}: {api:API;report:(s:string)=>void}) {
   const [settings,setSettings]=useState<SettingsData|null>(null),[schema,setSchema]=useState<SchemaData|null>(null)
   const [query,setQuery]=useState(''),[level,setLevel]=useState('Basic'),[draft,setDraft]=useState<Record<string,unknown>>({})
@@ -238,8 +257,9 @@ function SettingsPanel({api,report}: {api:API;report:(s:string)=>void}) {
     await api('/settings',{method:'PATCH',body:JSON.stringify({revision:settings.revision,values})})
     setSettings(await api('/settings'));setDraft({});report('Settings saved atomically; apply to new jobs only.')
   }
-  return <section className="settings"><h2>Configuration</h2>
+  return <section className="settings"><span className="eyebrow">SYSTEM / OPERATOR CONTROL</span><h1>Configuration</h1>
     <p>No provider key fields. OpenRouter and vLLM are blocked, not connected. No off-host fallback.</p>
+    <ModelCatalog/>
     <div className="inline">{['Basic','Advanced','Expert'].map(v=><button key={v} aria-pressed={level===v} onClick={()=>setLevel(v)}>{v}</button>)}
       <input aria-label="Search settings" placeholder="Search settings…" value={query} onChange={e=>setQuery(e.target.value)}/></div>
     {settings&&schema&&<>
@@ -267,7 +287,7 @@ function SettingsPanel({api,report}: {api:API;report:(s:string)=>void}) {
         <h3>Administration</h3><button onClick={()=>api('/admin/ledger/reset',{method:'POST'}).then(()=>report('Failure quarantine reset and audited.')).catch(e=>report(e.message))}>Reset failure quarantine</button>
         <button onClick={()=>api('/admin/retention',{method:'POST'}).then(()=>report('Retention applied.')).catch(e=>report(e.message))}>Apply retention now</button></>}
     </>}
-    <h3>Real model availability</h3><pre>{JSON.stringify(models,null,2)}</pre>
+    <h3>Real model availability</h3>{models===null?<p className="muted">Awaiting local API model report. Readiness not yet established.</p>:<pre>{JSON.stringify(models,null,2)}</pre>}
     <p className="caption">Artifact presence is not inference-tested readiness. No downloads at startup. No confidence calibration.</p>
   </section>
 }
@@ -422,19 +442,30 @@ export default function App() {
         <span className="readiness">Inference: {String(health?.inference??'checking')}</span></div>
       {connected&&<button onClick={logout}>Lock workspace</button>}
     </header>
-    {!connected?<main className="login" id="main"><span className="eyebrow">PRIVATE BY DESIGN</span><h1>Your documents.<br/>Your review.</h1>
-      <p>Encrypted local storage. Explicit human decisions.<br/>No automatic approval. No cloud fallback.</p>
+    {!connected?<main className="login" id="main">
+      <section className="login-intro"><span className="eyebrow"><span className="signal"/> PRIVATE BY DESIGN / LOCAL BY DEFAULT</span>
+        <h1>Your documents.<br/>Your <em>review.</em></h1>
+        <p className="login-description">A controlled workspace for document recognition.<br/>Original pixels. Inspectable evidence. Human decisions.</p>
+        <div className="login-blueprint" aria-hidden="true"><div className="blueprint-top"><span>DOCUMENT / INSPECTION LAYER</span><span>ROI</span></div>
+          <div className="blueprint-page"><div className="blueprint-lines"/><div className="blueprint-roi"><span>FIELD REGION</span><i/><i/><i/></div><div className="blueprint-lines short"/><div className="blueprint-cells">{Array.from({length:8},(_,i)=><i key={i}/>)}</div></div>
+          <div className="blueprint-bottom"><span>ORIGINAL PIXELS</span><span>HUMAN IN THE LOOP ↗</span></div></div>
+        <div className="login-principles"><span><b>01</b> Inspect the source</span><span><b>02</b> Review every field</span><span><b>03</b> Export deliberately</span></div>
+      </section>
+      <section className="unlock-panel" aria-labelledby="unlock-title"><div className="unlock-heading"><span className="eyebrow">OPERATOR ACCESS</span><span className="access-mark" aria-hidden="true">↗</span></div>
+      <h2 id="unlock-title">Unlock your workspace.</h2><p>Encrypted local storage. Explicit human decisions.<br/>No automatic approval. No cloud fallback.</p>
       <form onSubmit={e=>{e.preventDefault();setToken(entry);setEntry('');setAuthEpoch(n=>n+1)}}>
         <label>Operator bearer token<input type="password" autoComplete="off" value={entry} onChange={e=>setEntry(e.target.value)} required minLength={32} aria-describedby="token-help"/></label>
         <small id="token-help">Paste from your private server environment. Kept only in memory; reload locks the workspace.</small>
         <button className="primary" type="submit" disabled={busy}>Unlock local workspace →</button>
       </form>{error&&<p role="alert" className="error">{error}</p>}
+      <div className="access-status"><span className="signal"/><span>LOCAL API</span><strong>{String(health?.api??'checking')}</strong></div>
       <p className="caption">Synthetic demo fixtures are not real handwriting. Missing weights produce real errors, never sample-derived predictions.</p>
+      <div className="session-note"><span aria-hidden="true">↳</span> Credentials stay in memory. Your review stays yours.</div></section>
     </main>:<>
       <nav aria-label="Workspace"><button aria-current={tab==='studio'?'page':undefined} onClick={()=>setTab('studio')}>01 / Review studio</button>
         <button aria-current={tab==='gallery'?'page':undefined} onClick={()=>setTab('gallery')}>02 / Synthetic gallery</button>
         <button aria-current={tab==='settings'?'page':undefined} onClick={()=>setTab('settings')}>03 / Settings & models</button>
-        <span>{docs.length} documents · session only</span></nav>
+        <span>{docs.length} stored documents · token in memory</span></nav>
       <div className="messages" aria-live="polite">{notice&&<p>{notice}<button onClick={()=>setNotice('')} aria-label="Dismiss notice">×</button></p>}
         {error&&<p role="alert" className="error">{error}<button onClick={()=>setError('')} aria-label="Dismiss error">×</button></p>}</div>
       <main id="main">
@@ -448,7 +479,13 @@ export default function App() {
             </div>
           </article>)}</div></section>}
         {tab==='settings'&&<SettingsPanel api={api} report={report}/>}
-        {tab==='studio'&&<div className="workspace">
+        {tab==='studio'&&<><section className="session-overview" aria-label="Workspace overview">
+          <div className="overview-title"><span className="eyebrow">OPERATIONS / REVIEW DESK</span><h2>Document control.</h2><span className="caption">Live local records. No inferred accuracy.</span></div>
+          <dl className="overview-metrics"><div><dt>Stored documents</dt><dd>{docs.length.toString().padStart(2,'0')}</dd></div>
+            <div><dt>Human reviewed</dt><dd>{docs.filter(d=>d.review_state==='reviewed').length.toString().padStart(2,'0')}</dd></div>
+            <div><dt>Saved templates</dt><dd>{templates.length.toString().padStart(2,'0')}</dd></div>
+            <div><dt>Selected document fields</dt><dd>{results?`${Object.values(results.fields).filter(f=>f.review&&!f.review.stale).length} / ${Object.keys(results.fields).length}`:'—'}<small>explicitly reviewed</small></dd></div></dl>
+        </section><div className="workspace">
           <aside className="sidebar"><span className="eyebrow">DOCUMENTS & TEMPLATES</span>
             <label>Upload / editor template<select aria-label="Upload / editor template" value={template?`${template.template_id}@${template.template_version}`:''} onChange={e=>{
               const t=templates.find(t=>`${t.template_id}@${t.template_version}`===e.target.value)
@@ -484,7 +521,7 @@ export default function App() {
               {doc&&<span className={'badge '+(results?.review_state==='reviewed'?'reviewed':'')}>{results?.review_state==='reviewed'?'HUMAN REVIEWED':'DRAFT UNTIL REVIEWED'}</span>}
             </div>
             {doc&&template&&image&&template.width_px===doc.width_px&&template.height_px===doc.height_px?<Canvas key={doc.id} template={template} image={image} selected={selected} select={setSelected} change={change} evidence={results?.fields||{}}/>:
-              <div className="empty"><span>▧</span><h2>A clear view of every field.</h2><p>Full-resolution evidence, editable ROIs,<br/>and an honest trail from model to review.</p><button className="primary" onClick={()=>setTab('gallery')}>Open synthetic gallery →</button></div>}
+              <div className="empty"><div className="empty-coordinate" aria-hidden="true">[ x₀, y₀, x₁, y₁ )</div><span aria-hidden="true">▧</span><span className="eyebrow">AWAITING DOCUMENT</span><h2>A clear view of every field.</h2><p>Full-resolution evidence, editable ROIs,<br/>and an honest trail from model to review.</p><button className="primary" onClick={()=>setTab('gallery')}>Open synthetic gallery →</button><small>Or upload a scan from the document panel.</small></div>}
             {doc&&template&&(template.template_id!==doc.template_id||template.template_version!==doc.template_version||hist!.past.length>0)&&<p className="caption">Editor preview only. OCR and evidence still use document snapshot {doc.template_id} / {doc.template_version}. Re-upload with a saved version to apply.</p>}
             {doc&&<section className="job-panel"><div className="section-heading"><h2>Recognition queue</h2><span>{job?.state||'Not submitted'}</span></div>
               <label><input type="checkbox" checked={aligned} onChange={e=>setAligned(e.target.checked)}/> I checked original upright alignment against this document's immutable template.</label>
@@ -539,7 +576,7 @@ export default function App() {
               })}}>Delete document</button>
             </>}
           </aside>
-        </div>}
+        </div></>}
       </main>
       {evidenceOpen&&<div className="drawer-backdrop" onClick={()=>setEvidenceOpen(false)}><section className="drawer" role="dialog" aria-modal="true" aria-label="Evidence comparison" onClick={e=>e.stopPropagation()} onKeyDown={e=>{
         if(e.key==='Escape')setEvidenceOpen(false)
