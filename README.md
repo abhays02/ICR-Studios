@@ -1,33 +1,123 @@
 # ICR-bank · local review Studio
 
-An executable, dark, responsive React/TypeScript workspace with an authenticated
-FastAPI backend, encrypted storage, immutable templates, durable local jobs,
-streamed progress, human corrections and draft/reviewed exports.
+Inspect form scans, save human corrections and export traceable results in a local React + FastAPI workspace.
 
-**This is a working manual-review and missing-model vertical slice, not a
-validated banking OCR product.** No weights, real-handwriting dataset, accuracy
-scores or calibrated confidence are included. Only the local Microsoft TrOCR
-adapter exists; the other requested models, OpenRouter and vLLM remain explicitly
-unsupported. There is no external fallback. See the [actual gates](docs/STATUS.md).
+> **Manual-review prototype—not production-ready OCR.**
+> Working review flow; no bundled weights, validated handwriting accuracy or calibrated confidence.
+> [Implemented features and open gates →](docs/STATUS.md)
 
-## One-command local setup
+![Real Studio screenshot: a fictional CAR form with region overlays, an empty model-text field, one human correction and a failed local recognition job.](docs/media/studio-review.png)
 
-Prerequisites: Linux/macOS, Python 3.11+ (tested 3.12.3), **uv 0.13.1**,
-**Node 24.21.0 / npm 11+**. Install uv using your approved package process
-(`python -m pip install uv==0.13.1`).
+*Real running Studio, synthetic data only. The correction is human-entered—not an OCR prediction.*
+
+[Start locally](#start-locally) · [Watch the workflow](#watch-the-workflow) · [What works?](#what-works-today) · [Operator guide](docs/STUDIO.md)
+
+## Watch the workflow
+
+![Five captioned stages in the real Studio: import a synthetic fixture, inspect regions, observe missing-model failure, save a human correction and download draft JSON.](docs/media/studio-walkthrough.gif)
+
+**18-second capture sequence:** import → inspect → missing-model failure → correct → draft export.
+Real browser actions and API responses; only pauses are condensed and captions added.
+The downloaded JSON was checked: `review_state: draft`, `raw_text: null`, human correction preserved.
+
+**Static alternative:** [Review workspace](docs/media/studio-review.png) · [Synthetic gallery](docs/media/studio-gallery.png).
+Only one field is reviewed in this demo; it does **not** demonstrate final approval or successful OCR.
+
+### Explore safely
+
+![Synthetic gallery screenshot: six fictional script-font forms, with import controls for the first five and an alignment-required block for the sixth.](docs/media/studio-gallery.png)
+
+| Import | Inspect & correct | Export |
+| --- | --- | --- |
+| Five importable fixtures; skewed sixth blocked | Original-pixel regions, crop evidence, saved human edits | Draft JSON/CSV; reviewed exports require final approval |
+| Script-font simulations, **not real handwriting** | New template version? **Re-upload** to apply it | Raw evidence stays separate from corrections |
+
+[Fixture provenance](data/samples/README.md) · [Template editing and review controls](docs/STUDIO.md)
+
+## Document workflow
+
+```mermaid
+flowchart TD
+    A["Import synthetic fixture or upload scan"] --> B["Inspect original pixels and template regions"]
+    B --> C{"Upright alignment confirmed?"}
+    C -->|No| D["Correct scan externally; re-upload"]
+    D --> B
+    C -->|Yes| E["Queue local OCR"]
+    E --> F{"Local model available and inference succeeds?"}
+    F -->|No| G["Record failure; raw text unavailable"]
+    F -->|Yes| H["Keep model evidence; no accuracy guarantee"]
+    G --> I["Save explicit human corrections"]
+    H --> I
+    I --> J{"Every field reviewed and validation passes?"}
+    J -->|No| I
+    J -->|Yes| K["Finalize human review"]
+    K --> L["Reviewed JSON / CSV"]
+    I --> M["Draft JSON / CSV — unverified"]
+```
+
+*Missing weights never produce invented text. Incomplete, invalid or stale review and amount mismatches block final approval.*
+
+## Local processing boundary
+
+```mermaid
+flowchart LR
+    A["Studio browser: token in memory"] -->|"Authenticated same-origin requests"| B["FastAPI"]
+    B --> C["Private local storage: encrypted images and sensitive rows"]
+    B --> D["Durable local job queue"]
+    D --> E["Local TrOCR adapter"]
+    E --> F{"Approved weights and runtime available?"}
+    F -->|No| G["Failure evidence; no external fallback"]
+    F -->|Yes| H["Bounded local inference"]
+    G --> C
+    H --> C
+    D -->|"Authenticated SSE progress"| A
+    B -->|"Explicit JSON / CSV download"| I["Operator-managed export files"]
+```
+
+*No outbound inference. Weights are provisioned separately, never downloaded at startup.
+Browser memory and downloaded exports are outside encrypted storage.*
+
+## What works today?
+
+| Capability | Status |
+| --- | --- |
+| Authenticated Studio, encrypted local storage | **Implemented** — local operator tokens, not enterprise identity |
+| PNG/JPEG and single-page PDF uploads | **Implemented** — max 10 MiB, exact template dimensions |
+| Region editing, immutable templates, human corrections | **Implemented** — save new versions; re-upload to apply |
+| Durable jobs, real SSE, draft/reviewed JSON & CSV | **Implemented** — explicit human approval; CSV formula-prefix protection |
+| Local Microsoft TrOCR adapter | **Implemented adapter only** — real weights/inference unverified |
+| Real handwriting dataset, CER/WER, confidence calibration | **Not established** — no accuracy or performance claims |
+| Optional inference image, CUDA/MPS execution | **Unverified** — dependencies, approved weights and hardware required |
+| Other requested models, OpenRouter, custom vLLM | **Unsupported** — no remote fallback |
+| Automatic alignment, multipage PDF, signature/identity verification | **Not implemented** |
+| Production banking compliance or automated approval | **Not claimed** |
+
+[Detailed evidence and remaining gates](docs/STATUS.md) · [Evaluation methodology](docs/EVALUATION.md) · [Model/license evidence](docs/MODELS.md)
+
+## Start locally
+
+| Requirement | Version |
+| --- | --- |
+| OS | Linux / macOS |
+| Python | 3.11+; previously tested with 3.12.3 |
+| uv | 0.13.1 |
+| Node / npm | 24.21.0 / 11+ |
+
+Install uv through your approved package process (`python -m pip install uv==0.13.1`), then run from the repository root:
 
 ```sh
 ./scripts/start-local
 ```
 
-This performs locked Python/npm installs, builds Studio, creates private
-`var/secrets.env` once and starts **http://127.0.0.1:8000**. It never fetches model
-weights. Copy only the operator bearer token from the private `ICR_TOKENS` mapping
-into the masked unlock field. Do not paste the encryption key or the entire JSON
-mapping. Tokens stay in memory, not browser storage; reload/Lock clears them.
-Keep `var/` private and out of source control. Stop with Ctrl-C.
+1. Open **http://127.0.0.1:8000**.
+2. Unlock using **only the operator bearer token** from the private `ICR_TOKENS` mapping in `var/secrets.env`—not the encryption key or whole mapping.
+3. Open **Synthetic gallery**, import a fixture and follow the workflow above.
 
-Without the helper:
+The helper installs locked dependencies, builds Studio and creates secrets once. **No model weights are fetched.**
+Stop with **Ctrl-C**; reload or **Lock workspace** clears the in-memory browser token.
+
+<details>
+<summary>Manual startup / frontend development</summary>
 
 ```sh
 uv sync --frozen
@@ -37,63 +127,39 @@ uv run --frozen icr init-secrets   # once only; refuses to overwrite
 uv run --frozen icr serve
 ```
 
-The compiled app is served by FastAPI at `/`; API/images/events are same-origin.
-There is no need to enable CORS. For frontend development only, run
-`cd studio && npm run dev`; Vite proxies API/health to port8000, without copying
-credentials into frontend environment files.
+FastAPI serves Studio, API, images and events on the same origin; no CORS setup is needed.
+For frontend development, keep the backend running and use `cd studio && npm run dev`.
+Vite proxies to port 8000; never copy credentials into frontend environment files.
 
-## Docker, CPU default
+</details>
 
-Docker Engine + Compose v2 are required:
+### Prefer Docker?
+
+With Docker Engine + Compose v2:
 
 ```sh
 ./scripts/start-docker
 ```
 
-Studio is again **http://127.0.0.1:8000**. The container is nonroot UID10001,
-read-only except private data and bounded runtime tmpfs. The helper initializes
-`var/docker/secrets.env`, owns **only that dedicated state directory** as UID10001,
-and starts the service. Read the private token locally with authorized filesystem
-access; never change the directory/key permissions to world-readable.
-`docker compose down` stops it without deleting the bind-mounted state.
+Open **http://127.0.0.1:8000**; use the operator token from private `var/docker/secrets.env`.
+The default nonroot CPU image supports manual review/API, **without Torch, Transformers or weights**.
+Stop with `docker compose down`; private state is retained.
 
-The default image is a small **CPU manual-review/API image**, without Torch,
-Transformers or weights. Opt in to the larger dependency image for CPU inference:
+[CPU inference, NVIDIA opt-in, deployment and configuration →](docs/CONFIGURATION.md)
 
-```sh
-docker compose -f compose.yaml -f compose.inference.yaml up -d --build studio
-```
+## Security essentials
 
-For NVIDIA (driver + NVIDIA Container Toolkit required), provision approved
-offline weights first, then explicitly enable the GPU service:
+- Keep `var/`, tokens and keys private and out of source control; never make their permissions world-readable.
+- Use only synthetic data for public captures. These committed visuals contain fictional fixtures, no credentials or real banking data.
+- Protect downloaded JSON/CSV separately: exports are **not encrypted by the application**.
+- Keep the default loopback binding. External deployment needs reviewed HTTPS ingress and rate limiting.
 
-```sh
-docker compose --profile gpu up -d --build gpu
-# http://127.0.0.1:8001 ; separate var/gpu database inside the data mount
-```
+[Security boundaries and incident handling](SECURITY.md) · [Deployment hardening](docs/CONFIGURATION.md#networktlsrate-limit-boundary)
 
-The optional inference image/GPU execution are **not tested here**. No container
-downloads weights at startup. CPU and GPU use float32; no VRAM or performance
-claim is made. See [configuration/deployment](docs/CONFIGURATION.md).
+## Verify it yourself
 
-## Workflow
-
-1. Open **Synthetic gallery**: six clearly labeled script-font fixtures, not real
-   handwriting. Import the first five; the sixth is blocked pending alignment.
-2. Inspect full-resolution pixels, zoom/pan/view rotation and the original-pixel
-   SVG overlays. Edit labels/types/numeric flags and ordered line/comb-cell boxes.
-   Undo/redo/reset; save a **new immutable template version**. Re-upload with it
-   to apply changes; existing documents/jobs do not mutate.
-3. Upload PNG/JPEG or a bounded single-page PDF (10MiB, exact template dimensions).
-   Bulk queue progress measures real bytes, not guessed OCR progress.
-4. Explicitly confirm upright alignment and queue local OCR. Authenticated fetch
-   streams genuine SSE. Missing weights produce actual failure evidence/raw null.
-5. Inspect real raw/model/provenance evidence and save each human correction.
-   Final review is blocked for incomplete/invalid/stale fields or amount mismatch.
-6. Download explicitly **draft** or **reviewed** JSON/CSV. JSON preserves raw
-   evidence and human history; CSV neutralizes spreadsheet formula prefixes.
-
-## Verification
+<details>
+<summary>Existing lint, test, build and real-browser checks</summary>
 
 ```sh
 (cd studio && npm ci --ignore-scripts && npm run lint && npm test && npm run build)
@@ -103,8 +169,7 @@ docker compose config --quiet
 docker build --target cpu -t icr-bank:studio .
 ```
 
-Real browser smoke requires a running stack, private smoke environment and an
-installed Chromium executable. It does not mock recognition or API responses:
+For real browser smoke, start a **disposable synthetic-only** stack with private secrets and an installed Chromium:
 
 ```sh
 # Defaults: URL http://127.0.0.1:8000, secret file var/studio-live/secrets.env
@@ -112,21 +177,19 @@ cd studio
 CHROMIUM=/usr/bin/chromium npm run test:smoke
 ```
 
-Override `ICR_SMOKE_URL` and repository-relative `ICR_SMOKE_SECRETS` as needed.
-The smoke intentionally creates synthetic documents, template versions,
-corrections and runtime setting changes; **never run it against production data**.
-Screenshots/downloads go to ignored `var/`, never public static assets.
+Override `ICR_SMOKE_URL` and repository-relative `ICR_SMOKE_SECRETS` if needed.
+Smoke creates documents, template versions, corrections and runtime setting changes:
+**never run it against production data**. Its screenshots/downloads remain in ignored `var/`.
+The curated README media above was captured separately using only fictional fixtures; it is not a public dump of smoke artifacts.
 
-## Documentation
+</details>
 
-- [Verified implementation, execution evidence and open gates](docs/STATUS.md)
-- [Studio/operator guide](docs/STUDIO.md)
-- [Configuration and deployment](docs/CONFIGURATION.md), [all real keys](docs/CONFIG_REFERENCE.md)
-- [Authenticated API / exact pixel and SSE contracts](docs/API.md)
-- [Security boundaries and incident handling](SECURITY.md)
-- [Evaluation methodology and absent measurements](docs/EVALUATION.md)
-- [Upstream model/license evidence](docs/MODELS.md), [design](docs/DESIGN.md)
-- [Fixture provenance](data/samples/README.md)
+## Reference shelf
 
-No signature/identity verification, automated approval, regulatory certification
-or production banking compliance is claimed.
+| Need | Read |
+| --- | --- |
+| Implementation evidence & unfinished work | [Status](docs/STATUS.md) |
+| Review, templates & settings | [Studio guide](docs/STUDIO.md) |
+| Runtime, containers & configuration keys | [Deployment](docs/CONFIGURATION.md) · [Configuration reference](docs/CONFIG_REFERENCE.md) |
+| Authentication, pixels & SSE contracts | [API](docs/API.md) |
+| Architecture & model provenance | [Design](docs/DESIGN.md) · [Models](docs/MODELS.md) |
