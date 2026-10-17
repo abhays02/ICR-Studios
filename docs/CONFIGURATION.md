@@ -183,3 +183,64 @@ store encrypted backups and keys in separate access domains. Restore into an
 isolated network, validate schema/key/AAD integrity, principal mapping, retention,
 sample crops/reviews and worker lease fences before exposing it. Restore drills
 and disaster-recovery timings are **not measured in this release**.
+
+## Public documentation site
+
+The docs site is independent of Studio, FastAPI and private runtime storage.
+It renders the complete repository README, security policy, all Markdown guides
+under `docs/` (including future nested guides), fixture provenance and the Studio
+development README. Existing Markdown remains the source of truth; do not edit
+generated HTML. The public output contains only those guides, documentation
+assets and the synthetic media already committed under `docs/media/`.
+Review all new documentation/media for secrets and private data before publishing.
+
+From the repository root, using Node 22+ and Python 3:
+
+```sh
+cd docs/site
+npm ci --ignore-scripts
+npm run build
+npm run preview
+```
+
+Open **http://127.0.0.1:4174**. The build produces `docs/site/dist/`, rewrites
+guide links and checks internal section anchors. No application credentials,
+backend, model weights, CDN scripts, remote fonts or analytics are needed.
+Mermaid fences remain readable diagram source; each guide also has a separate
+interactive workflow. Known guides have curated steps in `docs/site/workflows.mjs`;
+new guides automatically get section-based exploration steps until curated.
+
+Playback starts **paused**. Keyboard-accessible controls support play/pause,
+previous/next, direct step selection, reset and speed selection. Reduced-motion
+preferences disable automatic workflow animation; manual steps remain usable.
+The real GIF uses a still poster until explicitly played and can be stopped.
+All guides and workflow steps remain readable without JavaScript. Title/filename
+search filters navigation; it is not a full-text search engine.
+
+### Publish separately from the application
+
+The **Documentation site** workflow builds on documentation-related pull
+requests/pushes. Deployment is opt-in: in repository **Settings → Pages**, select
+**GitHub Actions** as the build source, then manually run the workflow from the
+default branch with **Publish to GitHub Pages** enabled. The `github-pages`
+environment can require approval. Only the generated docs artifact is deployed;
+the workflow never builds or deploys Studio or the API.
+
+For a docs subdomain you control:
+
+1. In **Settings → Pages → Custom domain**, enter your actual docs hostname.
+   No domain has been assumed or provisioned by this change.
+2. Follow GitHub’s DNS instructions: a subdomain CNAME normally points to
+   `abhays02.github.io`, without a repository path. Verify domain ownership using
+   GitHub’s recommended DNS verification before publishing.
+3. Wait for DNS/certificate provisioning, enable **Enforce HTTPS**, then verify
+   navigation, media and section links at the actual hostname.
+4. Add the verified public URL to the repository website field and README only
+   after deployment succeeds. Keep custom-domain configuration in Pages settings;
+   the build intentionally does not ship a hardcoded `CNAME`.
+
+Relative asset/page URLs support both a project Pages path and a subdomain root.
+Alternatively upload **only `docs/site/dist/`** to a separate static HTTPS host
+with directory indexes enabled and the correct HTML/CSS/JS/SVG/GIF MIME types.
+Never serve the repository root, `var/`, environment files, keys or model caches.
+Do not reuse the authenticated application origin or change its ingress for docs.

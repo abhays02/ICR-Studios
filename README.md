@@ -1,5 +1,7 @@
 # ICR-bank · local review Studio
 
+[![Documentation atlas: complete guides, interactive workflows, real synthetic demo, evidence and limits.](docs/media/docs-atlas.svg)](docs/CONFIGURATION.md#public-documentation-site)
+
 Inspect form scans, save human corrections and export traceable results in a local React + FastAPI workspace.
 
 > **Manual-review prototype—not production-ready OCR.**
@@ -11,6 +13,23 @@ Inspect form scans, save human corrections and export traceable results in a loc
 *Real running Studio, synthetic data only. The correction is human-entered—not an OCR prediction.*
 
 [Start locally](#start-locally) · [Watch the workflow](#watch-the-workflow) · [What works?](#what-works-today) · [Operator guide](docs/STUDIO.md)
+
+## Documentation, in motion
+
+**A separate documentation experience—without changing Studio.** The static site
+renders every guide in full, with title search, section links and a tailored
+**play / pause / previous / next** workflow on each page. The real Studio GIF
+below remains a recording; the site’s workflow cards are clearly labeled illustrations.
+
+| Start & operate | Understand & integrate | Inspect the evidence |
+| --- | --- | --- |
+| [Studio walkthrough](docs/STUDIO.md) | [API contracts](docs/API.md) | [Implementation status](docs/STATUS.md) |
+| [Runtime & publishing](docs/CONFIGURATION.md) | [Architecture](docs/DESIGN.md) | [Models & provenance](docs/MODELS.md) |
+| [Configuration keys](docs/CONFIG_REFERENCE.md) | [Studio development](studio/README.md) | [Evaluation](docs/EVALUATION.md) |
+| [Security boundaries](SECURITY.md) | [Synthetic fixture provenance](data/samples/README.md) | [Real recorded demo](#watch-the-workflow) |
+
+[Preview the docs locally and publish on your docs subdomain →](docs/CONFIGURATION.md#public-documentation-site)
+Publishing is opt-in; no live domain or successful deployment is claimed.
 
 ## Watch the workflow
 
