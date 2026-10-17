@@ -11,7 +11,9 @@ const repository = 'https://github.com/abhays02/ICR-bank/blob/main/';
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[char]));
-const slug = (value) => value.toLowerCase().replace(/<[^>]*>/g, '')
+const inlineText = (tokens) => tokens.map((token) => token.type === 'html' ? ''
+  : token.tokens ? inlineText(token.tokens) : token.text ?? token.raw).join('');
+const slug = (value) => value.toLowerCase()
   .replace(/[^\p{L}\p{N}_\s-]/gu, '').trim().replace(/\s/g, '-');
 
 async function discover(directory) {
@@ -66,11 +68,12 @@ function render(page) {
       },
       heading({ tokens, depth }) {
         const text = this.parser.parseInline(tokens);
-        const base = slug(tokens.map((token) => token.text ?? token.raw).join(''));
+        const plainText = inlineText(tokens);
+        const base = slug(plainText);
         const count = duplicates.get(base) ?? 0;
         duplicates.set(base, count + 1);
         const id = base + (count ? `-${count}` : '');
-        headings.push({ depth, text: text.replace(/<[^>]*>/g, ''), id });
+        headings.push({ depth, text: plainText, id });
         return `<h${depth} id="${escape(id)}">${text}<a class="anchor" href="#${escape(id)}" aria-label="Link to section">#</a></h${depth}>`;
       },
       link({ href, tokens, title }) {

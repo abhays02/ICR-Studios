@@ -17,7 +17,11 @@ function select(index, announce = true) {
   current = (index + steps.length) % steps.length;
   steps.forEach((step, i) => step.setAttribute('aria-pressed', String(i === current)));
   document.querySelector('#step-count').textContent = `${current + 1} / ${steps.length}`;
-  if (announce) document.querySelector('#step-detail').textContent = `Step ${current + 1}: ${steps[current].textContent.trim()}`;
+  if (announce) {
+    const title = steps[current].querySelector('strong').textContent;
+    const detail = steps[current].querySelector('span:last-child').textContent;
+    document.querySelector('#step-detail').textContent = `Step ${current + 1}: ${title}. ${detail}`;
+  }
 }
 
 function pause() {
