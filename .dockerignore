@@ -5,6 +5,7 @@ var
 **/__pycache__
 **/node_modules
 studio/dist
+studio/dist-demo
 *.egg-info
 .env
 data/real_handwriting

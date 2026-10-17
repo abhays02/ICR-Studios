@@ -1,4 +1,4 @@
-# ICR-bank · local review Studio
+# ICR Studios · offline review + isolated web showcase
 
 Inspect form scans, save human corrections and export traceable results in a local React + FastAPI workspace.
 
@@ -6,9 +6,28 @@ Inspect form scans, save human corrections and export traceable results in a loc
 > Working review flow; no bundled weights, validated handwriting accuracy or calibrated confidence.
 > [Implemented features and open gates →](docs/STATUS.md)
 
-![Real Studio screenshot: a fictional CAR form with region overlays, an empty model-text field, one human correction and a failed local recognition job.](docs/media/studio-review.png)
+The Studio now uses a charcoal/obsidian, neon-lime industrial workspace. The
+separate public showcase demonstrates the product direction and provides an
+explicitly consented Hugging Face Space workflow; it is **not** part of the
+offline application's runtime or build.
 
-*Real running Studio, synthetic data only. The correction is human-entered—not an OCR prediction.*
+- **Offline Studio:** existing local review, templates, encrypted storage and
+  local TrOCR adapter. No cloud inference or automatic model downloads.
+- **Web showcase:** separate `studio/src/demo/` frontend and `web_demo/` gateway,
+  with its own build and server. Uploads leave the device only after consent.
+- **Requested model roadmap:** upstream projects identify
+  [`lightonai/LightOnOCR-3-1B`](https://github.com/lightonai/LightOnOCR) (also
+  0.8B/4B variants) and
+  [`SeerRay-Lab/Xiaomi-OCR-0`](https://github.com/SeerRay-Lab/Xiaomi-OCR-0).
+  They remain candidate adapters here. Weight revisions, licenses, compatible
+  runtimes and evaluation must be established before local support is advertised.
+  Plug-in installation, two-model benchmarking and packaged Windows/macOS/CLI
+  downloads are not implemented by this UI redesign.
+
+![Redesigned local Studio: live document counts, synthetic form regions, review controls and explicit unavailable inference status.](docs/media/studio-industrial.png)
+
+*Real running Studio, synthetic data only. Metrics describe stored review state,
+not model accuracy. No unavailable model output is fabricated.*
 
 [Start locally](#start-locally) · [Watch the workflow](#watch-the-workflow) · [What works?](#what-works-today) · [Operator guide](docs/STUDIO.md)
 
@@ -20,8 +39,18 @@ Inspect form scans, save human corrections and export traceable results in a loc
 Real browser actions and API responses; only pauses are condensed and captions added.
 The downloaded JSON was checked: `review_state: draft`, `raw_text: null`, human correction preserved.
 
-**Static alternative:** [Review workspace](docs/media/studio-review.png) · [Synthetic gallery](docs/media/studio-gallery.png).
+**Static alternative:** [Current review workspace](docs/media/studio-industrial.png) · [Earlier review capture](docs/media/studio-review.png) · [Synthetic gallery](docs/media/studio-gallery.png).
 Only one field is reviewed in this demo; it does **not** demonstrate final approval or successful OCR.
+The walkthrough and gallery captures above predate the industrial visual redesign;
+the review workflow remains the same.
+
+### Web showcase preview
+
+![ICR Studios web showcase with an illustrative invoice sandbox, structured data viewer, and explicitly labeled desktop concept.](docs/media/icr-showcase.png)
+
+*Actual landing-page capture. Invoice, output, chart and desktop queue are labeled
+illustrations, not measured inference or performance. Live mode requires explicit
+consent and an operator-configured, compatible Space.*
 
 ### Explore safely
 
@@ -132,6 +161,65 @@ For frontend development, keep the backend running and use `cd studio && npm run
 Vite proxies to port 8000; never copy credentials into frontend environment files.
 
 </details>
+
+## Run the isolated web showcase
+
+Use synthetic documents only. This service never imports or mounts the offline
+banking backend. From the repository root, with the existing Python dependencies
+installed:
+
+```sh
+(cd studio && npm ci --ignore-scripts && npm run build:demo)
+WEB_DEMO_STATIC_DIR="$PWD/studio/dist-demo" \
+  python -m uvicorn web_demo.app:app --host 127.0.0.1 --port 8010
+```
+
+Open **http://127.0.0.1:8010/demo/index.html**. Cloud extraction is disabled by
+default; the illustrative sample remains usable. For frontend development,
+run the gateway separately and use `cd studio && npm run dev:demo`.
+
+To enable live extraction, set `WEB_DEMO_ENABLED=true` and
+`WEB_DEMO_MODELS_JSON` to an array of operator-verified Space mappings:
+`id`, `label`, bare HTTPS `origin` ending in `.hf.space`, exact single-segment
+`api_name`, `api_prefix` (default `/gradio_api`), ordered `inputs`, and
+`text_pointer` (default `/0`). Catalog IDs are `lightonocr-3` and `xiaomi-ocr-0`.
+Inside `inputs`, the literal `"$uploaded_file"` is replaced recursively with
+Gradio `FileData`. Use the chosen Space's **View API / Use via API** schema;
+there is no guessed endpoint or automatic provider fallback.
+
+`api_prefix` may be empty only for a verified older Space. `text_pointer` is a
+JSON Pointer into the final Gradio output array; an endpoint that returns only a
+file URL is insufficient because the gateway does not fetch output URLs. Both
+requested models' identities are evidenced by upstream GitHub documentation,
+but **no compatible public inference Space or real inference run was verified**.
+In particular, Xiaomi's linked Space is a project page, not evidence of an
+inference API. A configured mapping asserts operator verification; it is not a
+live health check.
+
+| Server-only setting | Default |
+| --- | --- |
+| `WEB_DEMO_HF_TOKEN` | Unset; optional provider credential, never a Vite/browser variable |
+| `WEB_DEMO_CONCURRENCY` | 2 active requests (range 1–8) |
+| `WEB_DEMO_DEADLINE_SECONDS` | 90 seconds (range 1–180) |
+| `WEB_DEMO_STATIC_DIR` | Unset; use the absolute path to the separate `studio/dist-demo` build |
+
+The browser sends raw PNG/JPEG/PDF bytes to `/demo-api/extract` only after
+explicit consent, with `X-Model-Id` and `X-Cloud-Consent: true`. The gateway
+enforces a 10 MiB upload cap, signature checks, bounded upstream results,
+deadlines, concurrency, HTTPS host/IP checks, and disabled redirects/proxies.
+It returns actual provider text and raw JSON, never invented accuracy or
+bounding boxes. Model output is rendered as escaped text. Cancellation stops
+local work best-effort; it cannot guarantee provider-side job cancellation or
+remote file deletion. Uploaded files are not persisted locally; the selected
+provider's processing and retention policies apply.
+
+The public demo needs a **dedicated origin**. Before any public deployment, add
+authentication, TLS, rate limiting, abuse protection and reviewed provider terms.
+Do not expose the offline backend through the demo proxy. The gateway's default
+loopback configuration is a development boundary, not production ingress.
+
+Gateway contract tests use mocked Spaces, not paid/live inference:
+`python -m unittest web_demo.test_app -v` (existing test extra required).
 
 ### Prefer Docker?
 
