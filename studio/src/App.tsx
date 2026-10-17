@@ -136,7 +136,7 @@ function Canvas({template, image, selected, select, change, evidence}: {
         })}
       </svg>
     </div>
-    <div className="legend"><span className="good-dot">● Human-reviewed</span><span className="pending-dot">● Needs review / unavailable</span><span className="bad-dot">● Validation issue</span></div>
+    <div className="legend"><span className="good-dot">━ Human-reviewed</span><span className="pending-dot">┄ Needs review / unavailable</span><span className="bad-dot">╍ Validation issue</span></div>
   </section>
 }
 
@@ -234,8 +234,10 @@ function ModelCatalog() {
         <code>microsoft/trocr-base-handwritten</code><p>The only implemented inference adapter. Approved local weights are required; missing weights fail explicitly.</p>
         <span className="model-status">Readiness: see live API report below</span></article>
       <article className="model-card"><span className="model-index">02 / REQUESTED CANDIDATE</span><h3>LightOnOCR 3</h3>
-        <span className="badge">NOT INTEGRATED</span><p>Requested name only. Exact upstream identity, version, license, local runtime and hardware requirements remain unverified.</p>
-        <span className="model-status">Pending identity & runtime verification</span></article>
+        <code>lightonai/LightOnOCR-3-0.8B<br/>lightonai/LightOnOCR-3-1B<br/>lightonai/LightOnOCR-3-4B</code>
+        <p>Official upstream identities confirmed. Upstream documents local vLLM OpenAI-compatible calls and grounding coordinates normalized to 0–1000.</p>
+        <span className="badge">NOT INTEGRATED</span><p>No adapter or tested weights here. This Studio blocks vLLM; no HF Space inference endpoint has been verified.</p>
+        <span className="model-status">Identity known / adapter pending</span></article>
       <article className="model-card"><span className="model-index">03 / REQUESTED CANDIDATE</span><h3>Xiaomi OCR 0</h3>
         <code>SeerRay-Lab/Xiaomi-OCR-0</code><p>Upstream identity confirmed: 0.8B, derived from Qwen3.5. No local adapter is implemented. Runtime compatibility remains unverified.</p>
         <span className="badge">NOT INTEGRATED</span><p>The upstream Space is a project page and assets, not a verified inference endpoint. No inference URL is configured or guessed.</p>

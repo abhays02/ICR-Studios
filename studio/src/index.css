@@ -30,7 +30,7 @@ button:hover:not(:disabled) { background: #20242a; border-color: #727b89; }
 button:disabled { opacity: .42; cursor: not-allowed; }
 button.primary { background: var(--mint); color: #101500; border-color: var(--mint); font-weight: 750; }
 button.primary:hover:not(:disabled) { background: #c0ff60; border-color: #c0ff60; }
-button.danger { color: #ffaaa4; background: #241213; border-color: #673238; }
+button.danger { color: #f5f6f8; background: #1b1e24; border-color: #858f9e; border-style: dashed; }
 button[aria-pressed=true] { color: var(--mint); border-color: var(--mint); background: #17200b; }
 label { display: block; font-size: 12px; color: #d2d6de; margin: 15px 0 10px; line-height: 1.5; }
 input, select, textarea {

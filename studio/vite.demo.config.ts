@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  cacheDir: 'node_modules/.vite-demo',
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist-demo',

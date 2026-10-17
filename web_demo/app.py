@@ -20,13 +20,14 @@ import urllib.parse
 import urllib.request
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from http.client import HTTPSConnection
+from http.client import HTTPException as HTTPProtocolError, HTTPSConnection
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.requests import ClientDisconnect
 
 MAX_UPLOAD = 10 * 1024 * 1024
 MAX_UPSTREAM = 2 * 1024 * 1024
@@ -54,10 +55,18 @@ def load_json(value: str | bytes) -> Any:
     def invalid_constant(_: str) -> None:
         raise ValueError("Non-finite JSON value")
 
-    return json.loads(value, parse_constant=invalid_constant)
+    def finite_float(raw: str) -> float:
+        number = float(raw)
+        if not math.isfinite(number):
+            raise ValueError("Non-finite JSON value")
+        return number
+
+    return json.loads(value, parse_constant=invalid_constant, parse_float=finite_float)
 
 
 def validate_origin(origin: str) -> str:
+    if not isinstance(origin, str) or any(ord(char) <= 32 for char in origin):
+        raise ValueError("Invalid origin")
     parsed = urllib.parse.urlsplit(origin)
     if (
         parsed.scheme != "https"
@@ -223,20 +232,22 @@ class PinnedHTTPSConnection(HTTPSConnection):
     def __init__(self, *args: Any, control: Control, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.control = control
-        self.tracked: list[socket.socket] = []
 
     def connect(self) -> None:
         # Resolve once, reject every non-public answer, then connect to that IP
         # while preserving the original hostname for TLS verification and SNI.
         answers = socket.getaddrinfo(self.host, 443, type=socket.SOCK_STREAM)
         self.control.check()
-        if not answers or any(not ipaddress.ip_address(item[4][0]).is_global for item in answers):
+        addresses = [ipaddress.ip_address(item[4][0]) for item in answers]
+        if not addresses or any(
+            not address.is_global or address.is_multicast or address.is_reserved
+            for address in addresses
+        ):
             raise GatewayError(502, "Cloud origin did not resolve to public addresses")
         last_error: OSError | None = None
         for family, socktype, proto, _, address in answers:
             sock = socket.socket(family, socktype, proto)
             self.control.register(sock)
-            self.tracked.append(sock)
             try:
                 sock.settimeout(min(30, self.control.check()))
                 sock.connect(address)
@@ -245,7 +256,6 @@ class PinnedHTTPSConnection(HTTPSConnection):
                 )
                 self.control.unregister(sock)
                 self.control.register(wrapped)
-                self.tracked.append(wrapped)
                 wrapped.do_handshake()
                 self.sock = wrapped
                 return
@@ -254,12 +264,6 @@ class PinnedHTTPSConnection(HTTPSConnection):
                 sock.close()
                 self.control.unregister(sock)
         raise last_error or OSError("Cloud connection failed")
-
-    def close(self) -> None:
-        super().close()
-        for sock in self.tracked:
-            self.control.unregister(sock)
-        self.tracked.clear()
 
 
 class PinnedHTTPSHandler(urllib.request.HTTPSHandler):
@@ -427,10 +431,40 @@ class GradioGateway:
             raise GatewayError(502, "Selected cloud Space rejected the request") from None
         except (TimeoutError, socket.timeout):
             raise GatewayError(504, "Cloud request timed out") from None
-        except (urllib.error.URLError, OSError, ValueError, RecursionError):
+        except (urllib.error.URLError, OSError, ValueError, RecursionError, HTTPProtocolError):
             raise GatewayError(502, "Selected cloud Space could not be reached") from None
         finally:
             control.cancel()
+
+
+class SameOriginMiddleware:
+    def __init__(self, app: Any):
+        self.app = app
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        request = Request(scope)
+        origin = request.headers.get("origin")
+        if origin and origin != f"{request.url.scheme}://{request.url.netloc}":
+            response = JSONResponse(
+                {"detail": "Cross-origin requests are not allowed"}, status_code=403
+            )
+            await response(scope, receive, send)
+            return
+
+        async def secure_send(message: Any) -> None:
+            if message["type"] == "http.response.start":
+                message["headers"] = [
+                    *message.get("headers", []),
+                    (b"cache-control", b"no-store"),
+                    (b"x-content-type-options", b"nosniff"),
+                    (b"referrer-policy", b"no-referrer"),
+                ]
+            await send(message)
+
+        await self.app(scope, receive, secure_send)
 
 
 def create_app(settings: Settings | None = None, gateway: GradioGateway | None = None) -> FastAPI:
@@ -459,16 +493,7 @@ def create_app(settings: Settings | None = None, gateway: GradioGateway | None =
         lifespan=lifespan,
     )
 
-    @app.middleware("http")
-    async def same_origin(request: Request, call_next: Any):
-        origin = request.headers.get("origin")
-        if origin and origin != f"{request.url.scheme}://{request.url.netloc}":
-            return JSONResponse({"detail": "Cross-origin requests are not allowed"}, status_code=403)
-        response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        return response
+    app.add_middleware(SameOriginMiddleware)
 
     @app.get("/demo-api/models")
     async def models() -> dict[str, Any]:
@@ -528,9 +553,9 @@ def create_app(settings: Settings | None = None, gateway: GradioGateway | None =
 
         async def disconnected() -> None:
             while True:
-                if await request.is_disconnected():
+                message = await request.receive()
+                if message["type"] == "http.disconnect":
                     raise GatewayError(499, "Client disconnected")
-                await asyncio.sleep(0.1)
 
         try:
             async with asyncio.timeout(settings.deadline_seconds):
@@ -565,6 +590,8 @@ def create_app(settings: Settings | None = None, gateway: GradioGateway | None =
             raise HTTPException(504, "Cloud request deadline exceeded") from None
         except GatewayError as exc:
             raise HTTPException(exc.status, exc.message) from None
+        except ClientDisconnect:
+            raise HTTPException(499, "Client disconnected") from None
         finally:
             control.cancel()
             if watcher is not None:
@@ -577,16 +604,34 @@ def create_app(settings: Settings | None = None, gateway: GradioGateway | None =
                     active.discard(control)
 
     if settings.static_dir:
-        directory = settings.static_dir
+        directory = settings.static_dir.resolve()
         # Never serve the repository root, source tree, or arbitrary local files.
         root = Path(__file__).resolve().parent
-        if root not in directory.parents or directory.name != "dist" or not (directory / "index.html").is_file():
-            raise ValueError("Static directory must be a built web_demo/**/dist containing index.html")
-        app.mount("/demo", StaticFiles(directory=directory, html=True, follow_symlink=False), name="demo")
+        standalone = (
+            root in directory.parents
+            and directory.name == "dist"
+            and (directory / "index.html").is_file()
+        )
+        studio_demo = (
+            directory == root.parent / "studio" / "dist-demo"
+            and (directory / "demo" / "index.html").is_file()
+        )
+        if not standalone and not studio_demo:
+            raise ValueError(
+                "Static directory must be a built web_demo/**/dist or studio/dist-demo"
+            )
 
         @app.get("/")
         async def landing() -> RedirectResponse:
-            return RedirectResponse("/demo/")
+            return RedirectResponse("/demo/index.html" if studio_demo else "/demo/")
+
+        # The Studio's separate multi-page demo build has demo/index.html and
+        # root-level assets; only this build (never studio/dist) may mount at /.
+        app.mount(
+            "/" if studio_demo else "/demo",
+            StaticFiles(directory=directory, html=True, follow_symlink=False),
+            name="demo",
+        )
 
     return app
 
