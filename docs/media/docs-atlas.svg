@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title description">
+  <title id="title">ICR-bank documentation atlas</title>
+  <desc id="description">Read, explore, review and verify. Illustrated documentation workflows, not a live application or OCR result.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0a1020"/><stop offset="1" stop-color="#17384a"/></linearGradient>
+    <linearGradient id="line"><stop stop-color="#70f0c4"/><stop offset="1" stop-color="#92baff"/></linearGradient>
+  </defs>
+  <rect width="1200" height="340" rx="22" fill="url(#bg)"/>
+  <g fill="none" stroke="#30405a" opacity=".5"><path d="M0 280h1200M0 220h1200M0 160h1200M200 0v340M400 0v340M600 0v340M800 0v340M1000 0v340"/></g>
+  <g font-family="system-ui, sans-serif">
+    <text x="48" y="48" fill="#70f0c4" font-size="14" font-weight="700" letter-spacing="3">ICR / DOCUMENTATION ATLAS</text>
+    <text x="48" y="104" fill="#edf3ff" font-size="42" font-weight="800">Every guide. A clearer journey.</text>
+    <text x="48" y="139" fill="#b6c5de" font-size="18">Local-first evidence. Explicit human review. No invented OCR.</text>
+    <path d="M100 228h1000" stroke="url(#line)" stroke-width="3"/>
+    <g fill="#101e32" stroke="#4c7890"><rect x="48" y="180" width="258" height="108" rx="12"/><rect x="330" y="180" width="258" height="108" rx="12"/><rect x="612" y="180" width="258" height="108" rx="12"/><rect x="894" y="180" width="258" height="108" rx="12"/></g>
+    <g fill="#70f0c4" font-size="14" font-weight="700"><text x="68" y="211">01 / READ</text><text x="350" y="211">02 / EXPLORE</text><text x="632" y="211">03 / REVIEW</text><text x="914" y="211">04 / VERIFY</text></g>
+    <g fill="#edf3ff" font-size="20" font-weight="700"><text x="68" y="246">Complete guides</text><text x="350" y="246">Interactive workflows</text><text x="632" y="246">Real synthetic demo</text><text x="914" y="246">Evidence and limits</text></g>
+    <g fill="#b6c5de" font-size="13"><text x="68" y="272">Setup · API · Architecture</text><text x="350" y="272">Play · Pause · Step through</text><text x="632" y="272">Human corrections, not predictions</text><text x="914" y="272">Security · Models · Evaluation</text></g>
+    <text x="48" y="320" fill="#b6c5de" font-size="12">DOCUMENTATION ILLUSTRATION · MANUAL-REVIEW PROTOTYPE · NOT PRODUCTION BANKING SOFTWARE</text>
+  </g>
+</svg>
