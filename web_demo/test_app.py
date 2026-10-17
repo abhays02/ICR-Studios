@@ -418,6 +418,8 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(entries[0]["available"])
         self.assertFalse(entries[1]["available"])
         self.assertIn("reason", entries[1])
+        self.assertIn("identity is known", entries[1]["reason"])
+        self.assertIn("Gradio inference Space API is unverified", entries[1]["reason"])
         response = await self.client.post("/demo-api/extract", content=PNG, headers=HEADERS)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["model"], "lightonocr-3")
@@ -438,6 +440,18 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
                 response = await client.post("/demo-api/extract", content=PNG, headers=HEADERS)
                 self.assertEqual(response.status_code, 503)
         self.assertEqual(self.fake.calls, [])
+
+    async def test_known_identities_do_not_imply_verified_inference_adapters(self):
+        app = create_app(Settings(enabled=True))
+        async with app.router.lifespan_context(app):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://demo.test"
+            ) as client:
+                entries = (await client.get("/demo-api/models")).json()["models"]
+                for entry in entries:
+                    self.assertFalse(entry["available"])
+                    self.assertIn("identity is known", entry["reason"])
+                    self.assertIn("Gradio inference Space API is unverified", entry["reason"])
 
     async def test_consent_and_model_are_required(self):
         for headers in (

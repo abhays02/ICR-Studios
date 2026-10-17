@@ -38,6 +38,10 @@ CATALOG = {
     "lightonocr-3": "LightOnOCR 3",
     "xiaomi-ocr-0": "Xiaomi OCR 0",
 }
+UNAVAILABLE_REASONS = {
+    "lightonocr-3": "Official LightOnOCR 3 identity is known; Gradio inference Space API is unverified and not configured",
+    "xiaomi-ocr-0": "Official Xiaomi-OCR-0 identity is known; Gradio inference Space API is unverified and not configured",
+}
 MIME_TYPES = {
     "image/png": (".png", b"\x89PNG\r\n\x1a\n"),
     "image/jpeg": (".jpg", b"\xff\xd8\xff"),
@@ -506,7 +510,7 @@ def create_app(settings: Settings | None = None, gateway: GradioGateway | None =
                     **(
                         {"reason": "Cloud gateway is disabled"}
                         if not settings.enabled
-                        else {"reason": "Model identity and Space API have not been configured and verified"}
+                        else {"reason": UNAVAILABLE_REASONS[id_]}
                         if id_ not in settings.models
                         else {}
                     ),
