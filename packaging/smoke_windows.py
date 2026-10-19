@@ -35,6 +35,28 @@ def request(base, path, token=None, method="GET", body=None, media="application/
         return raw
 
 
+def verify_workspace_acl(workspace, env):
+    # Windows PowerShell must not inherit PowerShell 7's incompatible module paths.
+    acl_env = {key: value for key, value in env.items() if key.upper() != "PSMODULEPATH"}
+    acl_env["ICR_SMOKE_WORKSPACE"] = str(workspace)
+    subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", """
+        $ErrorActionPreference = 'Stop'
+        $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $paths = @((Get-Item -LiteralPath $env:ICR_SMOKE_WORKSPACE)) +
+            @(Get-ChildItem -LiteralPath $env:ICR_SMOKE_WORKSPACE -Recurse -Force)
+        foreach ($path in $paths) {
+            $acl = Get-Acl -LiteralPath $path.FullName
+            foreach ($rule in $acl.Access) {
+                $identity = $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+                if ($identity -ne $sid -and $identity -ne 'S-1-5-18') { throw 'Unexpected workspace ACL' }
+            }
+            if (-not $acl.AreAccessRulesProtected -and $path.FullName -eq $env:ICR_SMOKE_WORKSPACE) {
+                throw 'Workspace root ACL is not protected'
+            }
+        }
+    """], env=acl_env, check=True, timeout=60)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("executable", type=Path)
@@ -137,23 +159,7 @@ def main():
             assert token.encode() not in path.read_bytes()
     assert not (unrelated / "var").exists()
     assert secret_file.read_bytes() == before
-    acl_env = dict(env, ICR_SMOKE_WORKSPACE=str(workspace))
-    subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", """
-        $ErrorActionPreference = 'Stop'
-        $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        $paths = @((Get-Item -LiteralPath $env:ICR_SMOKE_WORKSPACE)) +
-            @(Get-ChildItem -LiteralPath $env:ICR_SMOKE_WORKSPACE -Recurse -Force)
-        foreach ($path in $paths) {
-            $acl = Get-Acl -LiteralPath $path.FullName
-            foreach ($rule in $acl.Access) {
-                $identity = $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
-                if ($identity -ne $sid -and $identity -ne 'S-1-5-18') { throw 'Unexpected workspace ACL' }
-            }
-            if (-not $acl.AreAccessRulesProtected -and $path.FullName -eq $env:ICR_SMOKE_WORKSPACE) {
-                throw 'Workspace root ACL is not protected'
-            }
-        }
-    """], env=acl_env, check=True, timeout=60)
+    verify_workspace_acl(workspace, env)
     manifest = json.loads((executable.parent / "bundle-manifest.json").read_text(encoding="utf-8"))
     for name, digest in manifest["files"].items():
         assert hashlib.sha256((executable.parent / name).read_bytes()).hexdigest() == digest

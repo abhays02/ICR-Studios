@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
 import uuid
@@ -174,6 +175,27 @@ class WindowsPackagingTests(unittest.TestCase):
 
 
 class WindowsSmokeTests(unittest.TestCase):
+    def test_acl_check_resets_inherited_powershell_module_paths(self):
+        workspace = ROOT / "var" / "windows-smoke" / "private-workspace"
+        for key in ("PSModulePath", "PSMODULEPATH", "psmodulepath"):
+            with self.subTest(key=key):
+                env = {key: "PowerShell-7-modules", "PATH": "system-path"}
+                original = env.copy()
+                with patch.object(smoke.subprocess, "run") as run:
+                    smoke.verify_workspace_acl(workspace, env)
+                self.assertEqual(env, original)
+                self.assertEqual(run.call_args.kwargs["env"],
+                                 {"PATH": "system-path", "ICR_SMOKE_WORKSPACE": str(workspace)})
+                self.assertEqual(run.call_args.args[0][0], "powershell.exe")
+                self.assertTrue(run.call_args.kwargs["check"])
+                self.assertEqual(run.call_args.kwargs["timeout"], 60)
+
+    def test_acl_check_failure_is_not_ignored(self):
+        with patch.object(smoke.subprocess, "run",
+                          side_effect=subprocess.CalledProcessError(1, "powershell.exe")):
+            with self.assertRaises(subprocess.CalledProcessError):
+                smoke.verify_workspace_acl(ROOT / "var", {})
+
     def test_empty_json_response_is_accepted(self):
         response = MagicMock()
         response.__enter__.return_value = response
