@@ -364,6 +364,11 @@ as the build source. Once enabled, documentation pushes to the default branch
 (`main` or `master`) automatically publish the landing page and guides.
 Pull requests only build; they never deploy. To republish manually, run the
 workflow on the default branch with **Publish to GitHub Pages** enabled.
+If Pages is not enabled, deployment is skipped with a setup warning instead of
+failing with HTTP 404; a successful workflow alone does not mean the site is live.
+A repository administrator must enable Pages first—the workflow token cannot
+provision it. After selecting **GitHub Actions** in **Settings → Pages**, rerun
+the workflow on the default branch with publishing enabled.
 The `github-pages` environment can require approval. Only the generated static
 artifact is deployed; the workflow never builds or deploys Studio or the API.
 
