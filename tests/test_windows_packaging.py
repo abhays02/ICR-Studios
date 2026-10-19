@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import uuid
 
 import yaml
@@ -24,6 +24,7 @@ def load_module(name):
 
 entry = load_module("windows_entry")
 builder = load_module("build_windows")
+smoke = load_module("smoke_windows")
 
 
 class WindowsPackagingTests(unittest.TestCase):
@@ -170,6 +171,19 @@ class WindowsPackagingTests(unittest.TestCase):
             self.skipTest("Creating Windows symlinks is not permitted for this account")
         with self.assertRaisesRegex(ValueError, "reparse"):
             entry.reject_reparse(link / "future")
+
+
+class WindowsSmokeTests(unittest.TestCase):
+    def test_empty_json_response_is_accepted(self):
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.__exit__.return_value = False
+        response.status = 204
+        response.headers.get_content_type.return_value = "application/json"
+        response.read.return_value = b""
+        with patch.object(smoke.urllib.request, "urlopen", return_value=response):
+            self.assertIsNone(smoke.request("http://localhost", "/document",
+                                            method="DELETE", expected=204))
 
 
 if __name__ == "__main__":

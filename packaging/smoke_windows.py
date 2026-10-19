@@ -28,6 +28,8 @@ def request(base, path, token=None, method="GET", body=None, media="application/
         if response.status != expected:
             raise AssertionError(f"{method} {path}: expected {expected}, got {response.status}")
         raw = response.read()
+        if not raw:
+            return None
         if response.headers.get_content_type() == "application/json":
             return json.loads(raw)
         return raw
