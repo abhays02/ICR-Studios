@@ -1,157 +1,63 @@
-# ICR Studios · offline review + isolated web showcase
+# ICR Studios
 
-[![Documentation atlas: complete guides, interactive workflows, real synthetic demo, evidence and limits.](docs/media/docs-atlas.svg)](docs/CONFIGURATION.md#public-documentation-site)
+**From scanned forms to traceable, human-reviewed data. Locally.**
 
-Inspect form scans, save human corrections and export traceable results in a local React + FastAPI workspace.
+[![ICR Studios at a glance: import a scan, inspect original pixels, save human corrections, export traceable JSON or CSV. Public documentation stays separate from the private local workspace.](docs/media/project-overview.svg)](https://abhays02.github.io/ICR-Studios/)
+
+[**Explore the interactive site ↗**](https://abhays02.github.io/ICR-Studios/) · [**Start locally**](#start-locally) · [**Release builds**](https://github.com/abhays02/ICR-Studios/releases) · [**Read the guides**](#find-your-guide)
+
+The site URL above is the default GitHub Pages target; it becomes available after
+the publishing workflow succeeds and Pages is enabled. GitHub Markdown cannot
+run interactive 3D scenes—follow the image to the separate animated experience.
 
 > **Manual-review prototype—not production-ready OCR.**
 > Working review flow; no bundled weights, validated handwriting accuracy or calibrated confidence.
 > [Implemented features and open gates →](docs/STATUS.md)
 
-The Studio now uses a charcoal/obsidian, neon-lime industrial workspace. The
-separate public showcase demonstrates the product direction and provides an
-explicitly consented Hugging Face Space workflow; it is **not** part of the
-offline application's runtime or build.
+## One project, three separate spaces
 
-- **Offline Studio:** existing local review, templates, encrypted storage and
-  local TrOCR adapter. No cloud inference or automatic model downloads.
-- **Web showcase:** separate `studio/src/demo/` frontend and `web_demo/` gateway,
-  with its own build and server. Uploads leave the device only after consent.
-- **Requested model roadmap:** upstream projects identify
-  [`lightonai/LightOnOCR-3-1B`](https://github.com/lightonai/LightOnOCR) (also
-  0.8B/4B variants) and
-  [`SeerRay-Lab/Xiaomi-OCR-0`](https://github.com/SeerRay-Lab/Xiaomi-OCR-0).
-  They remain candidate adapters here. Weight revisions, licenses, compatible
-  runtimes and evaluation must be established before local support is advertised.
-  Plug-in installation, two-model benchmarking and packaged Windows/macOS/CLI
-  downloads are not implemented by this UI redesign.
+| Space | Purpose | Runs where? |
+| --- | --- | --- |
+| **Offline Studio** | Inspect scans, edit regions, save corrections, export results | Your computer; React + FastAPI, encrypted private storage |
+| **Public landing & guides** | Interactive illustrated workflows, full reference docs, recorded demos | Static GitHub Pages; no API, credentials or uploads |
+| **Optional cloud showcase** | Synthetic illustration or explicitly consented provider extraction | Separate frontend + gateway; **not** included in offline Studio |
+
+No cloud fallback or automatic weight downloads. The local TrOCR adapter still
+needs separately approved weights and runtime verification.
 
 ![Redesigned local Studio: live document counts, synthetic form regions, review controls and explicit unavailable inference status.](docs/media/studio-industrial.png)
 
 *Real running Studio, synthetic data only. Metrics describe stored review state,
 not model accuracy. No unavailable model output is fabricated.*
 
-[Start locally](#start-locally) · [Watch the workflow](#watch-the-workflow) · [What works?](#what-works-today) · [Operator guide](docs/STUDIO.md)
+## Understand the workflow
 
-## Documentation, in motion
+| 01 · Import | 02 · Inspect | 03 · Correct | 04 · Export |
+| --- | --- | --- | --- |
+| PNG/JPEG or single-page PDF, max 10 MiB | Original pixels and template regions | Explicit human edits, separate from raw evidence | Draft JSON/CSV, or reviewed output after final approval |
 
-**A separate documentation experience—without changing Studio.** The static site
-renders every guide in full, with title search, section links and a tailored
-**play / pause / previous / next** workflow on each page. The real Studio GIF
-below remains a recording; the site’s workflow cards are clearly labeled illustrations.
+Missing weights produce **failure evidence, never invented text**. Incomplete,
+invalid or stale review blocks final approval. New template versions require
+re-upload. Five fictional fixtures are importable; the skewed sixth is blocked.
 
-| Start & operate | Understand & integrate | Inspect the evidence |
-| --- | --- | --- |
-| [Studio walkthrough](docs/STUDIO.md) | [API contracts](docs/API.md) | [Implementation status](docs/STATUS.md) |
-| [Runtime & publishing](docs/CONFIGURATION.md) | [Architecture](docs/DESIGN.md) | [Models & provenance](docs/MODELS.md) |
-| [Configuration keys](docs/CONFIG_REFERENCE.md) | [Studio development](studio/README.md) | [Evaluation](docs/EVALUATION.md) |
-| [Security boundaries](SECURITY.md) | [Synthetic fixture provenance](data/samples/README.md) | [Real recorded demo](#watch-the-workflow) |
+[Operator walkthrough](docs/STUDIO.md) · [Architecture & local boundaries](docs/DESIGN.md) · [Fixture provenance](data/samples/README.md)
 
-[Preview the docs locally and publish on your docs subdomain →](docs/CONFIGURATION.md#public-documentation-site)
-Publishing is opt-in; no live domain or successful deployment is claimed.
+<details>
+<summary>Watch the real recorded workflow</summary>
 
-## Watch the workflow
+![Import a fictional fixture, inspect regions, observe missing weights, save a correction, export draft JSON.](docs/media/studio-walkthrough.gif)
 
-![Five captioned stages in the real Studio: import a synthetic fixture, inspect regions, observe missing-model failure, save a human correction and download draft JSON.](docs/media/studio-walkthrough.gif)
+18-second synthetic-only recording; pauses condensed and captions added.
+Only one field is reviewed: this is **not** successful OCR or final approval.
+The recording predates the visual redesign. The docs site offers optional
+GIF playback with a still poster and stop control.
 
-**18-second capture sequence:** import → inspect → missing-model failure → correct → draft export.
-Real browser actions and API responses; only pauses are condensed and captions added.
-The downloaded JSON was checked: `review_state: draft`, `raw_text: null`, human correction preserved.
-
-**Static alternative:** [Current review workspace](docs/media/studio-industrial.png) · [Earlier review capture](docs/media/studio-review.png) · [Synthetic gallery](docs/media/studio-gallery.png).
-Only one field is reviewed in this demo; it does **not** demonstrate final approval or successful OCR.
-The walkthrough and gallery captures above predate the industrial visual redesign;
-the review workflow remains the same.
-
-### Web showcase preview
-
-![ICR Studios web showcase with an illustrative invoice sandbox, structured data viewer, and explicitly labeled desktop concept.](docs/media/icr-showcase.png)
-
-*Actual landing-page capture. Invoice, output, chart and desktop queue are labeled
-illustrations, not measured inference or performance. Live mode requires explicit
-consent and an operator-configured, compatible Space.*
-
-### Explore safely
-
-![Synthetic gallery screenshot: six fictional script-font forms, with import controls for the first five and an alignment-required block for the sixth.](docs/media/studio-gallery.png)
-
-| Import | Inspect & correct | Export |
-| --- | --- | --- |
-| Five importable fixtures; skewed sixth blocked | Original-pixel regions, crop evidence, saved human edits | Draft JSON/CSV; reviewed exports require final approval |
-| Script-font simulations, **not real handwriting** | New template version? **Re-upload** to apply it | Raw evidence stays separate from corrections |
-
-[Fixture provenance](data/samples/README.md) · [Template editing and review controls](docs/STUDIO.md)
-
-## Document workflow
-
-```mermaid
-flowchart TD
-    A["Import synthetic fixture or upload scan"] --> B["Inspect original pixels and template regions"]
-    B --> C{"Upright alignment confirmed?"}
-    C -->|No| D["Correct scan externally; re-upload"]
-    D --> B
-    C -->|Yes| E["Queue local OCR"]
-    E --> F{"Local model available and inference succeeds?"}
-    F -->|No| G["Record failure; raw text unavailable"]
-    F -->|Yes| H["Keep model evidence; no accuracy guarantee"]
-    G --> I["Save explicit human corrections"]
-    H --> I
-    I --> J{"Every field reviewed and validation passes?"}
-    J -->|No| I
-    J -->|Yes| K["Finalize human review"]
-    K --> L["Reviewed JSON / CSV"]
-    I --> M["Draft JSON / CSV — unverified"]
-```
-
-*Missing weights never produce invented text. Incomplete, invalid or stale review and amount mismatches block final approval.*
-
-## Local processing boundary
-
-```mermaid
-flowchart LR
-    A["Studio browser: token in memory"] -->|"Authenticated same-origin requests"| B["FastAPI"]
-    B --> C["Private local storage: encrypted images and sensitive rows"]
-    B --> D["Durable local job queue"]
-    D --> E["Local TrOCR adapter"]
-    E --> F{"Approved weights and runtime available?"}
-    F -->|No| G["Failure evidence; no external fallback"]
-    F -->|Yes| H["Bounded local inference"]
-    G --> C
-    H --> C
-    D -->|"Authenticated SSE progress"| A
-    B -->|"Explicit JSON / CSV download"| I["Operator-managed export files"]
-```
-
-*No outbound inference. Weights are provisioned separately, never downloaded at startup.
-Browser memory and downloaded exports are outside encrypted storage.*
-
-## What works today?
-
-| Capability | Status |
-| --- | --- |
-| Authenticated Studio, encrypted local storage | **Implemented** — local operator tokens, not enterprise identity |
-| PNG/JPEG and single-page PDF uploads | **Implemented** — max 10 MiB, exact template dimensions |
-| Region editing, immutable templates, human corrections | **Implemented** — save new versions; re-upload to apply |
-| Durable jobs, real SSE, draft/reviewed JSON & CSV | **Implemented** — explicit human approval; CSV formula-prefix protection |
-| Local Microsoft TrOCR adapter | **Implemented adapter only** — real weights/inference unverified |
-| Real handwriting dataset, CER/WER, confidence calibration | **Not established** — no accuracy or performance claims |
-| Optional inference image, CUDA/MPS execution | **Unverified** — dependencies, approved weights and hardware required |
-| Other requested models, OpenRouter, custom vLLM | **Unsupported** — no remote fallback |
-| Automatic alignment, multipage PDF, signature/identity verification | **Not implemented** |
-| Production banking compliance or automated approval | **Not claimed** |
-
-[Detailed evidence and remaining gates](docs/STATUS.md) · [Evaluation methodology](docs/EVALUATION.md) · [Model/license evidence](docs/MODELS.md)
+</details>
 
 ## Start locally
 
-| Requirement | Version |
-| --- | --- |
-| OS | Linux / macOS |
-| Python | 3.11+; previously tested with 3.12.3 |
-| uv | 0.13.1 |
-| Node / npm | 24.21.0 / 11+ |
-
-Install uv through your approved package process (`python -m pip install uv==0.13.1`), then run from the repository root:
+**Linux / macOS source:** Python 3.11+, uv 0.13.1, Node 24.21.0 / npm 11+.
+From the repository root:
 
 ```sh
 ./scripts/start-local
@@ -164,95 +70,25 @@ Install uv through your approved package process (`python -m pip install uv==0.1
 The helper installs locked dependencies, builds Studio and creates secrets once. **No model weights are fetched.**
 Stop with **Ctrl-C**; reload or **Lock workspace** clears the in-memory browser token.
 
-<details>
-<summary>Manual startup / frontend development</summary>
+[Manual startup, Docker & deployment](docs/CONFIGURATION.md#source-runtime) ·
+[Windows executable build & limitations](docs/CONFIGURATION.md#windows-release-build) ·
+[Separate cloud showcase setup](studio/README.md#separate-public-demo)
 
-```sh
-uv sync --frozen
-(cd studio && npm ci --ignore-scripts && npm run build)
-uv run --frozen icr init-secrets   # once only; refuses to overwrite
-. ./var/secrets.env
-uv run --frozen icr serve
-```
+Windows binaries are built and smoke-tested by the Windows release workflow.
+No downloadable executable is claimed until that workflow succeeds; see the
+release assets and build logs. Builds are **unsigned review prototypes**.
 
-FastAPI serves Studio, API, images and events on the same origin; no CORS setup is needed.
-For frontend development, keep the backend running and use `cd studio && npm run dev`.
-Vite proxies to port 8000; never copy credentials into frontend environment files.
+## What works today?
 
-</details>
+**Implemented:** authenticated review, encrypted local state, immutable templates,
+durable jobs, progress events, human corrections, draft/reviewed JSON and CSV.
 
-## Run the isolated web showcase
+**Not established:** real handwriting accuracy, calibrated confidence, tested
+model weights, CUDA/MPS execution, production banking compliance. Automatic
+alignment, multipage PDF and signature/identity verification are not implemented.
+Other model families remain candidates, not supported local adapters.
 
-Use synthetic documents only. This service never imports or mounts the offline
-banking backend. From the repository root, with the existing Python dependencies
-installed:
-
-```sh
-(cd studio && npm ci --ignore-scripts && npm run build:demo)
-WEB_DEMO_STATIC_DIR="$PWD/studio/dist-demo" \
-  python -m uvicorn web_demo.app:app --host 127.0.0.1 --port 8010
-```
-
-Open **http://127.0.0.1:8010/demo/index.html**. Cloud extraction is disabled by
-default; the illustrative sample remains usable. For frontend development,
-run the gateway separately and use `cd studio && npm run dev:demo`.
-
-To enable live extraction, set `WEB_DEMO_ENABLED=true` and
-`WEB_DEMO_MODELS_JSON` to an array of operator-verified Space mappings:
-`id`, `label`, bare HTTPS `origin` ending in `.hf.space`, exact single-segment
-`api_name`, `api_prefix` (default `/gradio_api`), ordered `inputs`, and
-`text_pointer` (default `/0`). Catalog IDs are `lightonocr-3` and `xiaomi-ocr-0`.
-Inside `inputs`, the literal `"$uploaded_file"` is replaced recursively with
-Gradio `FileData`. Use the chosen Space's **View API / Use via API** schema;
-there is no guessed endpoint or automatic provider fallback.
-
-`api_prefix` may be empty only for a verified older Space. `text_pointer` is a
-JSON Pointer into the final Gradio output array; an endpoint that returns only a
-file URL is insufficient because the gateway does not fetch output URLs. Both
-requested models' identities are evidenced by upstream GitHub documentation,
-but **no compatible public inference Space or real inference run was verified**.
-In particular, Xiaomi's linked Space is a project page, not evidence of an
-inference API. A configured mapping asserts operator verification; it is not a
-live health check.
-
-| Server-only setting | Default |
-| --- | --- |
-| `WEB_DEMO_HF_TOKEN` | Unset; optional provider credential, never a Vite/browser variable |
-| `WEB_DEMO_CONCURRENCY` | 2 active requests (range 1–8) |
-| `WEB_DEMO_DEADLINE_SECONDS` | 90 seconds (range 1–180) |
-| `WEB_DEMO_STATIC_DIR` | Unset; use the absolute path to the separate `studio/dist-demo` build |
-
-The browser sends raw PNG/JPEG/PDF bytes to `/demo-api/extract` only after
-explicit consent, with `X-Model-Id` and `X-Cloud-Consent: true`. The gateway
-enforces a 10 MiB upload cap, signature checks, bounded upstream results,
-deadlines, concurrency, HTTPS host/IP checks, and disabled redirects/proxies.
-It returns actual provider text and raw JSON, never invented accuracy or
-bounding boxes. Model output is rendered as escaped text. Cancellation stops
-local work best-effort; it cannot guarantee provider-side job cancellation or
-remote file deletion. Uploaded files are not persisted locally; the selected
-provider's processing and retention policies apply.
-
-The public demo needs a **dedicated origin**. Before any public deployment, add
-authentication, TLS, rate limiting, abuse protection and reviewed provider terms.
-Do not expose the offline backend through the demo proxy. The gateway's default
-loopback configuration is a development boundary, not production ingress.
-
-Gateway contract tests use mocked Spaces, not paid/live inference:
-`python -m unittest web_demo.test_app -v` (existing test extra required).
-
-### Prefer Docker?
-
-With Docker Engine + Compose v2:
-
-```sh
-./scripts/start-docker
-```
-
-Open **http://127.0.0.1:8000**; use the operator token from private `var/docker/secrets.env`.
-The default nonroot CPU image supports manual review/API, **without Torch, Transformers or weights**.
-Stop with `docker compose down`; private state is retained.
-
-[CPU inference, NVIDIA opt-in, deployment and configuration →](docs/CONFIGURATION.md)
+[Evidence & open gates](docs/STATUS.md) · [Models & licenses](docs/MODELS.md) · [Evaluation methodology](docs/EVALUATION.md)
 
 ## Security essentials
 
@@ -263,40 +99,16 @@ Stop with `docker compose down`; private state is retained.
 
 [Security boundaries and incident handling](SECURITY.md) · [Deployment hardening](docs/CONFIGURATION.md#networktlsrate-limit-boundary)
 
-## Verify it yourself
-
-<details>
-<summary>Existing lint, test, build and real-browser checks</summary>
-
-```sh
-(cd studio && npm ci --ignore-scripts && npm run lint && npm test && npm run build)
-uv sync --frozen --extra test
-uv run --frozen --extra test python -m unittest discover -s tests -v
-docker compose config --quiet
-docker build --target cpu -t icr-bank:studio .
-```
-
-For real browser smoke, start a **disposable synthetic-only** stack with private secrets and an installed Chromium:
-
-```sh
-# Defaults: URL http://127.0.0.1:8000, secret file var/studio-live/secrets.env
-cd studio
-CHROMIUM=/usr/bin/chromium npm run test:smoke
-```
-
-Override `ICR_SMOKE_URL` and repository-relative `ICR_SMOKE_SECRETS` if needed.
-Smoke creates documents, template versions, corrections and runtime setting changes:
-**never run it against production data**. Its screenshots/downloads remain in ignored `var/`.
-The curated README media above was captured separately using only fictional fixtures; it is not a public dump of smoke artifacts.
-
-</details>
-
-## Reference shelf
+## Find your guide
 
 | Need | Read |
 | --- | --- |
+| Use the workspace | [Studio operator guide](docs/STUDIO.md) |
+| Install, publish or build Windows | [Runtime & deployment](docs/CONFIGURATION.md) |
+| Develop or run the isolated showcase | [Frontend & showcase README](studio/README.md) |
 | Implementation evidence & unfinished work | [Status](docs/STATUS.md) |
-| Review, templates & settings | [Studio guide](docs/STUDIO.md) |
-| Runtime, containers & configuration keys | [Deployment](docs/CONFIGURATION.md) · [Configuration reference](docs/CONFIG_REFERENCE.md) |
+| Configuration keys | [Generated reference](docs/CONFIG_REFERENCE.md) |
 | Authentication, pixels & SSE contracts | [API](docs/API.md) |
 | Architecture & model provenance | [Design](docs/DESIGN.md) · [Models](docs/MODELS.md) |
+| Evaluation & fixture rights | [Evaluation](docs/EVALUATION.md) · [Fixture README](data/samples/README.md) |
+| Verify changes & protect data | [Contributor checks](studio/README.md#verification) · [Security policy](SECURITY.md) |

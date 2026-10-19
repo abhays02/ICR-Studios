@@ -1,0 +1,9 @@
+schema_version: 1
+# Windows keeps bounded input/pixels and the decoder subprocess wall deadline,
+# but does not provide POSIX hard memory/CPU resource limits.
+mode: local
+host: 127.0.0.1
+device: cpu
+local_only: true
+worker_enabled: true
+retention_days: 7

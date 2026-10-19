@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title description">
+  <title id="title">ICR Studios — local evidence, human authority</title>
+  <desc id="description">Four stages: import, inspect, correct, export. An illustrated layered form represents the local review workspace. This is a conceptual illustration, not OCR output.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#171d21"/><stop offset="1" stop-color="#090d10"/></linearGradient>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#303b43"/><stop offset="1" stop-color="#151e25"/></linearGradient>
+  </defs>
+  <rect width="1200" height="420" rx="24" fill="url(#bg)"/>
+  <g fill="none" stroke="#27343d">
+    <path d="M720 65 1120 235 880 360 480 190Z"/>
+    <path d="M720 90 1120 260 880 385 480 215Z"/>
+    <path d="m870 45 260 112M620 310l260 110"/>
+  </g>
+  <g font-family="system-ui, sans-serif">
+    <text x="48" y="58" fill="#cbff70" font-size="13" letter-spacing="3">ICR / STUDIOS</text>
+    <text x="48" y="123" fill="#f0f4ee" font-size="43" font-weight="700">Your scans.</text>
+    <text x="48" y="177" fill="#f0f4ee" font-size="43" font-weight="700">Your judgment.</text>
+    <text x="48" y="231" fill="#cbff70" font-size="43" font-weight="700">Your workspace.</text>
+    <text x="48" y="273" fill="#abb8bf" font-size="17">Offline-first. Human-reviewed. Traceable.</text>
+    <g transform="translate(760 58) rotate(16)">
+      <rect x="-14" y="20" width="260" height="252" rx="12" fill="#202d34" stroke="#475b62"/>
+      <rect width="260" height="252" rx="12" fill="url(#paper)" stroke="#6a7b79"/>
+      <text x="24" y="36" fill="#dae5df" font-size="12" letter-spacing="2">SYNTHETIC FORM</text>
+      <path d="M24 60h140M24 74h110M24 102h200M24 152h200M24 202h120" stroke="#708181" stroke-width="5" stroke-linecap="round"/>
+      <rect x="16" y="86" width="228" height="35" rx="3" fill="#cbff70" fill-opacity=".09" stroke="#cbff70"/>
+      <rect x="16" y="137" width="228" height="35" rx="3" fill="none" stroke="#7bd6d1"/>
+      <text x="24" y="235" fill="#cbff70" font-size="11">HUMAN REVIEW REQUIRED</text>
+    </g>
+    <g font-size="14">
+      <rect x="48" y="318" width="1104" height="62" rx="12" fill="#131c21" stroke="#34413f"/>
+      <text x="72" y="354" fill="#cbff70">01 / IMPORT</text>
+      <text x="355" y="354" fill="#e4eae4">02 / INSPECT</text>
+      <text x="637" y="354" fill="#e4eae4">03 / CORRECT</text>
+      <text x="922" y="354" fill="#e4eae4">04 / EXPORT</text>
+      <path d="M245 348h50m-8-6 8 6-8 6M528 348h50m-8-6 8 6-8 6M812 348h50m-8-6 8 6-8 6" fill="none" stroke="#6f8571"/>
+    </g>
+    <text x="48" y="403" fill="#83938d" font-size="11">ILLUSTRATED WORKFLOW · MANUAL-REVIEW PROTOTYPE · NO VALIDATED OCR ACCURACY CLAIM</text>
+  </g>
+</svg>

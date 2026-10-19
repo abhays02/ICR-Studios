@@ -1,6 +1,7 @@
 """Canonical original-pixel crops; no automatic alignment or invented detector."""
 import io
 import multiprocessing
+import os
 
 from PIL import Image, ImageOps
 
@@ -50,9 +51,11 @@ def canonical(raw, media, max_pixels, pdf_dpi):
 
 def _decode_child(pipe, args):
     try:
-        import resource
-        resource.setrlimit(resource.RLIMIT_AS, (1536 * 1024**2, 1536 * 1024**2))
-        resource.setrlimit(resource.RLIMIT_CPU, (15, 15))
+        if os.name != "nt":
+            import resource
+            resource.setrlimit(resource.RLIMIT_AS, (1536 * 1024**2, 1536 * 1024**2))
+            resource.setrlimit(resource.RLIMIT_CPU, (15, 15))
+        # Windows retains the parent deadline and pixel/input caps, not POSIX hard limits.
         pipe.send(("ok", canonical(*args)))
     except Exception:
         pipe.send(("error", "invalid_or_oversized_image"))

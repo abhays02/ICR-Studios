@@ -1,5 +1,21 @@
 # Fictional bank-form fixtures — DATA incomplete
 
+[Project overview](../../README.md) · [Operator guide](../../docs/STUDIO.md) · [Evaluation limits](../../docs/EVALUATION.md)
+
+[Interactive version ↗](https://abhays02.github.io/ICR-Studios/data-samples-README.html)
+(available after Pages publishes; GitHub READMEs remain static).
+
+**At a glance:** six fictional forms → five safe imports → inspect original
+pixels → exercise human review. The sixth fixture intentionally fails alignment.
+
+![Synthetic gallery: fictional form previews, import controls and an alignment-required block for the skewed fixture.](../../docs/media/studio-gallery.png)
+
+| Use these fixtures for | Do not use them as |
+| --- | --- |
+| Review UI, template coordinates, exports and synthetic demos | Real handwriting, validated recognition or banking compliance evidence |
+
+## What is included
+
 Six actual **1800 × 2400 RGB PNGs** (200 DPI metadata) are provided, covering
 CAR, LAR, KYC, RTGS and cheque, plus a noisy/sheared CAR with an invalid date.
 The generated PNGs total approximately 1.2 MB; all data/fonts total under 3 MB.
