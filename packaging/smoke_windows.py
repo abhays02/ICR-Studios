@@ -140,6 +140,7 @@ def main():
     acl_env = dict(env, ICR_SMOKE_WORKSPACE=str(workspace))
     subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", """
         $ErrorActionPreference = 'Stop'
+        Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
         $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
         $paths = @((Get-Item -LiteralPath $env:ICR_SMOKE_WORKSPACE)) +
             @(Get-ChildItem -LiteralPath $env:ICR_SMOKE_WORKSPACE -Recurse -Force)
