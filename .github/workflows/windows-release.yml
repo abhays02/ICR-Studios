@@ -1,0 +1,151 @@
+name: Windows manual-review preview
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Create a draft prerelease (select an existing vX.Y.Z tag)
+        type: boolean
+        default: false
+  push:
+    branches: ['**']
+    tags: ['v[0-9]*']
+    paths:
+      - '.github/workflows/windows-release.yml'
+      - 'packaging/**'
+      - 'requirements/build-windows.txt'
+      - 'backend/**'
+      - 'studio/**'
+      - 'data/templates/**'
+      - 'data/schemas/**'
+      - 'data/samples/**'
+      - 'tests/test_windows*.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    outputs:
+      artifact: ${{ steps.version.outputs.artifact }}
+      release_tag: ${{ steps.version.outputs.release_tag }}
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/var/uv-cache
+      TEMP: ${{ github.workspace }}/var/build
+      TMP: ${{ github.workspace }}/var/build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare repository-local scratch directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force var/build | Out-Null
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.12.3
+          architecture: x64
+      - name: Validate version and artifact name
+        id: version
+        shell: python
+        env:
+          REQUEST_PUBLISH: ${{ inputs.publish }}
+        run: |
+          import os, re, tomllib
+          ref = os.environ["GITHUB_REF"]
+          tag = os.environ["GITHUB_REF_NAME"] if ref.startswith("refs/tags/") else ""
+          if tag:
+              if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+                  raise SystemExit("Use a vX.Y.Z version tag")
+              with open("pyproject.toml", "rb") as stream:
+                  version = tomllib.load(stream)["project"]["version"]
+              if tag != "v" + version:
+                  raise SystemExit("Tag must match pyproject.toml version")
+          elif os.environ.get("REQUEST_PUBLISH", "").lower() == "true":
+              raise SystemExit("Publishing requires selecting an existing version tag")
+          suffix = tag or "preview-" + os.environ["GITHUB_SHA"][:12]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write("artifact=ICR-Studio-windows-x64-" + suffix + "\n")
+              stream.write("release_tag=" + tag + "\n")
+      - name: Restore locked CPU application and pinned build tools
+        shell: pwsh
+        run: |
+          python -m pip install uv==0.13.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv sync --frozen --extra test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv pip install --no-deps -r requirements/build-windows.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile offline Studio
+        working-directory: studio
+        shell: pwsh
+        run: |
+          npm ci --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test packaging and build one-folder executable
+        shell: pwsh
+        run: |
+          uv run --frozen --no-sync python -m unittest discover -s tests -p "test_windows*.py" -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --frozen --no-sync python packaging/build_windows.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: ZIP complete folder and test the extracted executable
+        shell: pwsh
+        env:
+          ARTIFACT_NAME: ${{ steps.version.outputs.artifact }}
+        run: |
+          New-Item -ItemType Directory -Force var/release, var/extracted | Out-Null
+          $zip = "var/release/$env:ARTIFACT_NAME.zip"
+          Compress-Archive -Path dist/ICR-Studio -DestinationPath $zip
+          Expand-Archive -LiteralPath $zip -DestinationPath var/extracted
+          uv run --frozen --no-sync python packaging/smoke_windows.py var/extracted/ICR-Studio/ICR-Studio.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+          "$hash  $env:ARTIFACT_NAME.zip" | Set-Content -Encoding ascii "$zip.sha256"
+      - name: Upload only the smoke-tested ZIP and checksum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.version.outputs.artifact }}
+          path: |
+            var/release/*.zip
+            var/release/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    needs: build
+    if: needs.build.outputs.release_tag != '' && (github.event_name == 'push' || inputs.publish)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download already tested release assets (no source execution)
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: release-assets
+      - name: Create draft preview, never a production/OCR release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+        run: |
+          gh release create "$RELEASE_TAG" release-assets/*.zip release-assets/*.sha256 \
+            --verify-tag --draft --prerelease --title "Windows manual-review preview $RELEASE_TAG" \
+            --notes "Unsigned Windows x64 one-folder preview. Extract the entire ZIP. No administrator rights required. No OCR models or production-readiness claim. Read docs/CONFIGURATION.md#windows-release-build before initializing keys; protect and back up the separate private workspace and keyring. CI smoke-tested the extracted executable for startup, offline Studio, authentication, sample import, PNG upload, restart persistence and ACL isolation. See the associated Actions run for evidence."

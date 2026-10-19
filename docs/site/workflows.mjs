@@ -99,12 +99,12 @@ export const workflows = {
     ],
   },
   'studio/README.md': {
-    label: 'Develop Studio independently',
+    label: 'Two frontends, separate boundaries',
     steps: [
-      ['Install', 'Use the Studio lockfile and its documented toolchain.'],
-      ['Run', 'Start the backend and the loopback Vite development server.'],
-      ['Verify', 'Use the existing lint, test and build commands.'],
-      ['Smoke', 'Run browser checks only against disposable synthetic data.'],
+      ['Choose', 'The offline workspace and the optional public showcase have separate builds and runtimes.'],
+      ['Start', 'Use the documented local workspace or isolated showcase gateway instructions.'],
+      ['Consent', 'Showcase live mode sends uploads off-device only after explicit consent and requires a configured compatible Space.'],
+      ['Verify', 'Use existing verification commands and synthetic data; illustrative output is not measured model performance.'],
     ],
   },
 };

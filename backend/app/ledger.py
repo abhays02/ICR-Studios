@@ -1,5 +1,5 @@
 """Process-safe, atomic failure quarantine; contains no text or exception messages."""
-import fcntl
+import errno
 import hashlib
 import json
 import os
@@ -8,6 +8,39 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .config import private_dir
+
+
+WINDOWS = os.name == "nt"
+if WINDOWS:
+    import msvcrt
+else:
+    import fcntl
+
+
+@contextmanager
+def _process_lock(lock):
+    fd = lock.fileno()
+    if WINDOWS:
+        # Byte-range locks may extend beyond EOF; never truncate the shared lock file.
+        while True:
+            os.lseek(fd, 0, os.SEEK_SET)
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                break
+            except OSError as error:
+                if error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                    raise
+                time.sleep(.05)
+    else:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+    try:
+        yield
+    finally:
+        if WINDOWS:
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            fcntl.flock(fd, fcntl.LOCK_UN)
 
 
 def fingerprint(parts):
@@ -23,8 +56,7 @@ class Ledger:
     @contextmanager
     def locked(self):
         fd = os.open(self.lock, os.O_CREAT | os.O_RDWR, 0o600)
-        with os.fdopen(fd, "r+") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+        with os.fdopen(fd, "r+b") as lock, _process_lock(lock):
             data = json.loads(self.path.read_text()) if self.path.exists() else {"version": 1, "issues": {}, "resets": []}
             yield data
             part = self.directory / f".ledger-{os.getpid()}.part"
@@ -34,11 +66,12 @@ class Ledger:
                 output.flush()
                 os.fsync(output.fileno())
             os.replace(part, self.path)
-            dirfd = os.open(self.directory, os.O_DIRECTORY)
-            try:
-                os.fsync(dirfd)
-            finally:
-                os.close(dirfd)
+            if not WINDOWS:
+                dirfd = os.open(self.directory, os.O_DIRECTORY)
+                try:
+                    os.fsync(dirfd)
+                finally:
+                    os.close(dirfd)
 
     def blocked(self, key):
         with self.locked() as data:

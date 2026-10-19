@@ -63,11 +63,38 @@ is not a static route.
 
 ## Source runtime
 
+**Linux / macOS quick start:** install Python 3.11+, Node 24.21.0 / npm 11+
+and uv 0.13.1 through your approved package process
+(`python -m pip install uv==0.13.1`), then run `./scripts/start-local` from
+the repository root. Open **http://127.0.0.1:8000**. Unlock with only the
+operator bearer token in the private `ICR_TOKENS` mapping in `var/secrets.env`,
+not the encryption key or whole mapping. Import a fictional form from
+**Synthetic gallery**. Stop with **Ctrl-C**; reload or **Lock workspace**
+clears the browser's in-memory token.
+
 `./scripts/start-local` installs from `uv.lock`/`package-lock.json`, builds then
 serves the compiled app on the same origin. It does not invoke inference-extra
 installs or model provisioning. Python3.11+ is declared; validation used3.12.3.
 Node24.21.0 is pinned in CI/Docker and compatible with the Vite/native
 TypeScript tooling. No global frontend packages are required.
+
+For manual startup:
+
+```sh
+uv sync --frozen
+(cd studio && npm ci --ignore-scripts && npm run build)
+uv run --frozen icr init-secrets   # once only; refuses to overwrite
+. ./var/secrets.env
+uv run --frozen icr serve
+```
+
+FastAPI serves Studio, API, images and events on the same origin. For frontend
+development, keep the backend running and use `cd studio && npm run dev`.
+Vite proxies to port 8000; never copy credentials into frontend environment files.
+See [contributor verification](../studio/README.md#verification) for existing
+lint, build, test and browser-smoke commands, and the
+[isolated showcase guide](../studio/README.md#separate-public-demo) for cloud
+gateway instructions. The showcase is not deployed with the documentation site.
 
 For explicit optional **local CPU inference**:
 
@@ -91,7 +118,118 @@ verification. Do not invent a license ID, substitute checkpoint namespaces, set
 artifact-present as inference-tested. HF metadata/network failure remains an
 open gate; no model is bundled.
 
+## Windows release build
+
+Windows packaging is a separate release step, not part of the static site.
+The Windows build workflow must compile the **offline** Studio, package its
+Python service and synthetic resources, and smoke-test the resulting executable
+on Windows before offering a download. A Linux build or passing source tests
+do not establish Windows compatibility.
+
+The intended download is a portable review prototype, **not** an installer,
+signed production release, bundled model or validated OCR engine. Keep the
+whole extracted application directory together; an executable alone may not
+contain its supporting files. Use only synthetic data until you have reviewed
+the Windows-specific protection and runtime limits below.
+
+### Download and run
+
+The **Windows manual-review preview** workflow builds on Windows x64 and uploads
+only a smoke-tested ZIP plus its SHA-256 checksum. Preview artifacts expire after
+14 days; published release assets are separate. A version tag must match
+`pyproject.toml` exactly (`vX.Y.Z`). Tag builds, or manual runs on an existing
+version tag with publishing enabled, create a **draft prerelease** for maintainer
+review—not an automatically public production release. Manual non-publishing
+branch builds produce only Actions artifacts.
+
+1. Check the successful Windows workflow run and download its artifact, or use
+   [Releases](https://github.com/abhays02/ICR-Studios/releases) after a maintainer
+   publishes the reviewed draft. No successful Windows build is implied by a
+   successful Linux/source build.
+2. Compare the downloaded ZIP with the accompanying `.sha256` using PowerShell
+   `Get-FileHash -Algorithm SHA256`. A checksum detects corruption; it is not a
+   code signature. These executables are unsigned; follow your organization's
+   trust policy rather than bypassing security warnings.
+3. Extract the **whole** ZIP into a user-owned folder. Keep `ICR-Studio.exe`,
+   `_internal/` and the bundle manifest together. Do not run as administrator.
+4. In PowerShell, change to the extracted `ICR-Studio` directory and run:
+
+```powershell
+.\ICR-Studio.exe init-secrets
+.\ICR-Studio.exe serve
+```
+
+Open **http://127.0.0.1:8000**. Initialization refuses to overwrite existing keys.
+To unlock Studio, privately open
+`%LOCALAPPDATA%\ICR-Studio\var\windows-secrets.json` and use **only the token
+key inside the nested `ICR_TOKENS` JSON mapping**, not `ICR_KEYS`, the complete
+mapping or the complete file. Nothing secret is printed by initialization.
+The browser retains the operator token only in memory. Stop with **Ctrl-C**.
+An alternate loopback port is available with `--port 8012 serve`.
+
+### Private workspace and runtime limits
+
+The launcher stores writable state outside application resources under
+`%LOCALAPPDATA%\ICR-Studio`; settings retain the required relative `var/`
+data directory. `--workspace C:\PrivateParent\ICR-Workspace` selects another
+workspace whose parent already exists. The launcher requires a **fixed local
+NTFS volume**, rejects network paths and reparse points, and applies private
+Windows DACLs granting the current account and SYSTEM access. POSIX `chmod`
+alone would not provide this boundary. Other processes running as your account,
+administrators and backups remain outside the application's threat boundary.
+
+The private `var/windows-secrets.json` stores encryption keys and operator
+tokens; it is not a distributable asset. Protect and back up the keyring
+separately from encrypted database/image backups. Losing keys loses data.
+Replacing the extracted application does not require deleting the workspace.
+Do not remove that workspace to “upgrade,” copy it into release ZIPs or put it
+under a static server. Full storage protection, retention and export caveats
+in this guide still apply.
+
+The preview binds to loopback only and contains neither Torch/Transformers,
+approved weights nor the cloud gateway. Resource ceilings and process isolation
+are platform-specific: Windows keeps upload/pixel checks and a killable
+20-second image-decoder deadline, but **does not have the POSIX decoder's hard
+memory/CPU limits**. Windows testing is not a production sandbox audit.
+Successful startup/manual review does not establish inference compatibility,
+handwriting accuracy or equal POSIX/Windows hardening.
+
+### Rebuild on Windows
+
+Use Python 3.12.3 x64, uv 0.13.1 and Node 24.21.0 with npm 11+.
+From the repository root in PowerShell:
+
+```powershell
+uv sync --frozen --extra test
+uv pip install --no-deps -r requirements/build-windows.txt
+Set-Location studio
+npm ci --ignore-scripts
+npm run build
+Set-Location ..
+uv run --frozen --no-sync python -m unittest discover -s tests -p "test_windows*.py" -v
+uv run --frozen --no-sync python packaging/build_windows.py
+uv run --frozen --no-sync python packaging/smoke_windows.py dist/ICR-Studio/ICR-Studio.exe
+```
+
+Build output is `dist/ICR-Studio/`. Distribute the entire folder, never just the
+`.exe`; the workflow additionally tests an extracted ZIP before uploading it.
+The build allowlists offline resources and inventories bundled files in
+`bundle-manifest.json`. It does not snapshot the repository or private state.
+Do not synchronize the environment between installing build tools and freezing:
+the `--no-sync` commands deliberately retain the separately pinned build tools.
+PyInstaller cannot cross-compile an authentic Windows executable on Linux.
+
+Publishing a binary does not close the [model and accuracy gates](STATUS.md).
+Never package `var/`, credentials, private documents, model caches, the cloud
+gateway or `studio/dist-demo/` into a distributable. Downloaded exports are not
+encrypted by the application.
+
 ## Containers
+
+With Docker Engine + Compose v2, run `./scripts/start-docker` and open
+**http://127.0.0.1:8000**. Use the operator token from private
+`var/docker/secrets.env`. The default CPU image has no Torch, Transformers or
+weights. Stop with `docker compose down`; private state is retained.
 
 The multi-stage Dockerfile builds Studio in pinned Node, copies actual backend
 source, templates/schemas/gallery images and profile files, then installs the
@@ -186,8 +324,9 @@ and disaster-recovery timings are **not measured in this release**.
 
 ## Public documentation site
 
-The docs site is independent of Studio, FastAPI and private runtime storage.
-It renders the complete repository README, security policy, all Markdown guides
+The landing and docs site is independent of Studio, FastAPI and private runtime storage.
+The homepage introduces the product with an interactive CSS 3D illustration;
+the guide library renders the complete repository README, security policy, all Markdown guides
 under `docs/` (including future nested guides), fixture provenance and the Studio
 development README. Existing Markdown remains the source of truth; do not edit
 generated HTML. The public output contains only those guides, documentation
@@ -220,11 +359,19 @@ search filters navigation; it is not a full-text search engine.
 ### Publish separately from the application
 
 The **Documentation site** workflow builds on documentation-related pull
-requests/pushes. Deployment is opt-in: in repository **Settings → Pages**, select
-**GitHub Actions** as the build source, then manually run the workflow from the
-default branch with **Publish to GitHub Pages** enabled. The `github-pages`
-environment can require approval. Only the generated docs artifact is deployed;
-the workflow never builds or deploys Studio or the API.
+requests/pushes. In repository **Settings → Pages**, select **GitHub Actions**
+as the build source. Once enabled, documentation pushes to the default branch
+(`main` or `master`) automatically publish the landing page and guides.
+Pull requests only build; they never deploy. To republish manually, run the
+workflow on the default branch with **Publish to GitHub Pages** enabled.
+The `github-pages` environment can require approval. Only the generated static
+artifact is deployed; the workflow never builds or deploys Studio or the API.
+
+The default target is **https://abhays02.github.io/ICR-Studios/**. This is a
+deployment target, not proof of a currently live site. Merge the changes, check
+the workflow's deployment URL, then verify landing navigation, every guide and
+media on the deployed site. Pages settings and DNS require repository/domain
+owner access and cannot be provisioned by changing source files alone.
 
 For a docs subdomain you control:
 

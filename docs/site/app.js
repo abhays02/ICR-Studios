@@ -1,5 +1,5 @@
 const search = document.querySelector('#search');
-const guides = [...document.querySelectorAll('.sidebar nav a')];
+const guides = [...document.querySelectorAll('.guide-links a')];
 search.addEventListener('input', () => {
   const query = search.value.trim().toLocaleLowerCase();
   for (const guide of guides) guide.hidden = !guide.dataset.search.toLocaleLowerCase().includes(query);
@@ -10,12 +10,15 @@ const steps = [...document.querySelectorAll('.step')];
 const play = document.querySelector('#play');
 const speed = document.querySelector('#speed');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const workflow = document.querySelector('.workflow');
 let current = 0;
 let timer;
 
 function select(index, announce = true) {
   current = (index + steps.length) % steps.length;
   steps.forEach((step, i) => step.setAttribute('aria-pressed', String(i === current)));
+  workflow.dataset.stage = String(Math.min(current, 3));
+  document.querySelector('.scene-stage').textContent = steps[current].querySelector('strong').textContent;
   document.querySelector('#step-count').textContent = `${current + 1} / ${steps.length}`;
   if (announce) {
     const title = steps[current].querySelector('strong').textContent;
@@ -29,7 +32,7 @@ function pause() {
   timer = undefined;
   play.textContent = 'Play workflow';
   play.setAttribute('aria-pressed', 'false');
-  document.querySelector('.workflow').classList.remove('playing');
+  workflow.classList.remove('playing');
 }
 
 function start() {
@@ -37,11 +40,19 @@ function start() {
   if (reducedMotion.matches) return;
   play.textContent = 'Pause workflow';
   play.setAttribute('aria-pressed', 'true');
-  document.querySelector('.workflow').classList.add('playing');
+  workflow.classList.add('playing');
   timer = setInterval(() => select(current + 1), Number(speed.value));
 }
 
 steps.forEach((step, index) => step.addEventListener('click', () => { pause(); select(index); }));
+steps.forEach((step, index) => step.addEventListener('keydown', (event) => {
+  const offset = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
+  if (offset === undefined && event.key !== 'Home' && event.key !== 'End') return;
+  event.preventDefault();
+  pause();
+  select(event.key === 'Home' ? 0 : event.key === 'End' ? steps.length - 1 : index + offset);
+  steps[current].focus();
+}));
 document.querySelector('#previous').addEventListener('click', () => { pause(); select(current - 1); });
 document.querySelector('#next').addEventListener('click', () => { pause(); select(current + 1); });
 document.querySelector('#reset').addEventListener('click', () => { pause(); select(0); });
@@ -53,6 +64,8 @@ function applyMotionPreference() {
   pause();
   play.disabled = reducedMotion.matches;
   play.title = reducedMotion.matches ? 'Automatic playback disabled by your reduced-motion preference; use Next or select a step.' : '';
+  if (reducedMotion.matches) document.querySelector('#step-detail').textContent =
+    'Reduced motion is on. Select a stage or use Previous / Next; automatic playback is disabled.';
 }
 reducedMotion.addEventListener('change', applyMotionPreference);
 document.querySelector('.controls').hidden = false;
