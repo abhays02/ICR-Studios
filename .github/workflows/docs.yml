@@ -64,6 +64,28 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check GitHub Pages availability
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_API_URL: ${{ github.api_url }}/repos/${{ github.repository }}/pages
+        run: |
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header "$(printf '%s: %s %s' Authorization Bearer "$GH_TOKEN")" \
+            --header "Accept: application/vnd.github+json" \
+            "$PAGES_API_URL")
+          case "$status" in
+            200) echo "enabled=true" >> "$GITHUB_OUTPUT" ;;
+            404)
+              echo "::warning::GitHub Pages is not enabled. Select GitHub Actions in Settings > Pages, then rerun this workflow with publishing enabled."
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Failed to check GitHub Pages availability (HTTP $status)."
+              exit 1
+              ;;
+          esac
       - name: Deploy static landing and documentation only
+        if: steps.pages.outputs.enabled == 'true'
         id: deployment
         uses: actions/deploy-pages@v4.0.5
