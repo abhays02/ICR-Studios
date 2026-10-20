@@ -14,6 +14,28 @@ const workflow = document.querySelector('.workflow');
 let current = 0;
 let timer;
 
+const revealTargets = [...document.querySelectorAll(
+  '.landing .workflow, .principles, .editorial-heading, .role-card, .all-guides .guide-search, .closing-note',
+)];
+if ('IntersectionObserver' in window && !reducedMotion.matches) {
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    }
+  }, { threshold: 0.08 });
+  for (const target of revealTargets) {
+    target.classList.add('reveal-ready');
+    observer.observe(target);
+  }
+  reducedMotion.addEventListener('change', () => {
+    if (!reducedMotion.matches) return;
+    for (const target of revealTargets) target.classList.add('is-visible');
+    observer.disconnect();
+  });
+}
+
 function select(index, announce = true) {
   current = (index + steps.length) % steps.length;
   steps.forEach((step, i) => step.setAttribute('aria-pressed', String(i === current)));
@@ -38,10 +60,14 @@ function pause() {
 function start() {
   pause();
   if (reducedMotion.matches) return;
+  if (current === steps.length - 1) select(0);
   play.textContent = 'Pause workflow';
   play.setAttribute('aria-pressed', 'true');
   workflow.classList.add('playing');
-  timer = setInterval(() => select(current + 1), Number(speed.value));
+  timer = setInterval(() => {
+    select(current + 1);
+    if (current === steps.length - 1) pause();
+  }, Number(speed.value));
 }
 
 steps.forEach((step, index) => step.addEventListener('click', () => { pause(); select(index); }));
