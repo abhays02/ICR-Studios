@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 import uuid
@@ -80,7 +82,7 @@ class WindowsPackagingTests(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "cross-compilation"):
                 builder.main()
 
-    def test_pr_and_branch_builds_have_no_release_write_permissions(self):
+    def test_pr_and_feature_branch_builds_cannot_publish(self):
         workflow = yaml.load((ROOT / ".github/workflows/windows-release.yml").read_text(),
                              Loader=yaml.BaseLoader)
         self.assertIn("pull_request", workflow["on"])
@@ -93,13 +95,98 @@ class WindowsPackagingTests(unittest.TestCase):
         release = workflow["jobs"]["release"]
         self.assertEqual(release["permissions"], {"contents": "write"})
         self.assertIn("needs.build.outputs.release_tag != ''", release["if"])
-        self.assertIn("github.event_name == 'push' || inputs.publish", release["if"])
+        self.assertIn("github.event_name == 'workflow_dispatch' && inputs.publish", release["if"])
+        self.assertIn("github.ref == format('refs/heads/{0}', github.event.repository.default_branch)",
+                      release["if"])
+        self.assertIn("startsWith(github.ref, 'refs/tags/v')", release["if"])
         self.assertEqual(release["needs"], "build")
         upload = next(step for step in workflow["jobs"]["build"]["steps"]
                       if step.get("uses", "").startswith("actions/upload-artifact@"))
         self.assertNotIn("if", upload)
         self.assertEqual(upload["with"]["path"].splitlines(),
                          ["var/release/*.zip", "var/release/*.sha256"])
+
+    def test_release_version_selection(self):
+        workflow = yaml.load((ROOT / ".github/workflows/windows-release.yml").read_text(),
+                            Loader=yaml.BaseLoader)
+        code = next(step["run"] for step in workflow["jobs"]["build"]["steps"]
+                    if step.get("id") == "version")
+        sha = "a" * 40
+        cases = [
+            ("refs/heads/main", "push", "", "windows-preview-" + sha[:12], True),
+            ("refs/heads/feature", "push", "", "", True),
+            ("refs/pull/1/merge", "pull_request", "", "", True),
+            ("refs/heads/main", "workflow_dispatch", "false", "", True),
+            ("refs/heads/main", "workflow_dispatch", "true", "windows-preview-" + sha[:12], True),
+            ("refs/heads/feature", "workflow_dispatch", "true", "", False),
+            ("refs/tags/v0.1.0", "push", "", "v0.1.0", True),
+            ("refs/tags/v0.1.0", "workflow_dispatch", "true", "v0.1.0", True),
+            ("refs/tags/v99.0.0", "push", "", "", False),
+            ("refs/tags/v0.1", "push", "", "", False),
+        ]
+        for ref, event, publish, tag, success in cases:
+            with self.subTest(ref=ref, event=event, publish=publish), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp) / "output"
+                result = subprocess.run([sys.executable, "-c", code], cwd=ROOT,
+                                       env={**os.environ, "GITHUB_REF": ref,
+                                            "GITHUB_REF_NAME": ref.rsplit("/", 1)[-1],
+                                            "GITHUB_SHA": sha, "GITHUB_EVENT_NAME": event,
+                                            "DEFAULT_BRANCH": "main", "REQUEST_PUBLISH": publish,
+                                            "GITHUB_OUTPUT": str(output)},
+                                       capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, success, result.stderr)
+                if success:
+                    self.assertIn(f"release_tag={tag}\n", output.read_text())
+                else:
+                    self.assertFalse(output.exists())
+
+    def test_bundle_includes_double_click_launcher_and_instructions(self):
+        bundle = ROOT / "dist/ICR-Studio"
+        with (patch.object(builder.sys, "platform", "win32"),
+              patch.object(builder.Path, "is_file", return_value=True),
+              patch.object(builder, "resource_files", return_value=[]),
+              patch.object(builder.subprocess, "run"),
+              patch.object(builder.shutil, "copyfile") as copy,
+              patch.object(builder.Path, "rglob", return_value=[]),
+              patch.object(builder.Path, "write_text")):
+            builder.main()
+        self.assertEqual(copy.call_args_list[0].args,
+                         (ROOT / "packaging/RUN-STUDIO.cmd", bundle / "RUN-STUDIO.cmd"))
+        self.assertEqual(copy.call_args_list[1].args,
+                         (ROOT / "packaging/WINDOWS-README.txt", bundle / "README.txt"))
+
+    @unittest.skipIf(os.name == "nt", "Release publication runs on Ubuntu with bash")
+    def test_release_publication_supports_new_tags_and_reruns(self):
+        workflow = yaml.load((ROOT / ".github/workflows/windows-release.yml").read_text(),
+                             Loader=yaml.BaseLoader)
+        script = workflow["jobs"]["release"]["steps"][-1]["run"]
+        for tag, exists in (("windows-preview-" + "a" * 12, False),
+                            ("v0.1.0", False), ("v0.1.0", True)):
+            with self.subTest(tag=tag, exists=exists), tempfile.TemporaryDirectory() as tmp:
+                calls = Path(tmp) / "calls"
+                result = subprocess.run(
+                    ["bash", "-e", "-c",
+                     'gh() { printf "%s\\n" "$*" >> "$CALLS"; '
+                     'if [[ "$1 $2" == "release view" ]]; then return "$VIEW_EXIT"; fi; }\n'
+                     + script],
+                    cwd=tmp, env={**os.environ, "CALLS": str(calls),
+                                  "VIEW_EXIT": "0" if exists else "1",
+                                  "RELEASE_TAG": tag, "RELEASE_SHA": "a" * 40,
+                                  "GITHUB_SERVER_URL": "https://github.com",
+                                  "GITHUB_REPOSITORY": "example/test", "GITHUB_RUN_ID": "123"},
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = calls.read_text()
+                if exists:
+                    self.assertIn("--clobber", commands)
+                    self.assertIn("--draft=false --prerelease --latest=false", commands)
+                    self.assertNotIn("release create", commands)
+                else:
+                    self.assertIn("release create", commands)
+                    self.assertIn("--prerelease --latest=false", commands)
+                    self.assertNotIn("--draft", commands)
+                    self.assertIn("--verify-tag" if tag.startswith("v") else "--target " + "a" * 40,
+                                  commands)
 
     def test_resource_allowlist_contains_only_runtime_resources(self):
         files = builder.resource_files()

@@ -106,6 +106,48 @@ for (const button of document.querySelectorAll('.recording-toggle')) {
     button.setAttribute('aria-pressed', 'false');
     button.textContent = 'Play recorded Studio demo';
   }
+
+  const spaceContainer = document.querySelector('#space-container');
+  if (spaceContainer) {
+    const consent = document.querySelector('#space-consent');
+    const load = document.querySelector('#load-space');
+    const unload = document.querySelector('#unload-space');
+    const status = document.querySelector('#space-status');
+    function disconnectSpace() {
+      spaceContainer.replaceChildren();
+      load.disabled = !consent.checked;
+      unload.hidden = true;
+      status.textContent = 'Not connected. The external frame is removed; prior provider uploads cannot be undone here.';
+    }
+    load.hidden = false;
+    consent.checked = false;
+    load.disabled = true;
+    consent.addEventListener('change', () => {
+      if (!consent.checked) disconnectSpace();
+      else load.disabled = spaceContainer.childElementCount > 0;
+    });
+    load.addEventListener('click', () => {
+      if (!consent.checked || spaceContainer.childElementCount) return;
+      const frame = document.createElement('iframe');
+      frame.title = 'External LightOnAI LightOnOCR 3 interactive Hugging Face Space';
+      frame.referrerPolicy = 'no-referrer';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
+      frame.src = spaceContainer.dataset.spaceOrigin;
+      spaceContainer.replaceChildren(frame);
+      load.disabled = true;
+      unload.hidden = false;
+      status.textContent = 'External Space requested. Cold starts and queues may take time. If it does not load, open the official Space link above.';
+    });
+    unload.addEventListener('click', () => {
+      consent.checked = false;
+      disconnectSpace();
+      consent.focus();
+    });
+    window.addEventListener('pagehide', () => {
+      consent.checked = false;
+      disconnectSpace();
+    });
+  }
   button.hidden = false;
   button.addEventListener('click', () => {
     if (button.getAttribute('aria-pressed') === 'true') stopRecording();

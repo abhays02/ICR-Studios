@@ -45,6 +45,13 @@ The landing illustration is synthetic and its example output is not an OCR
 prediction. Live uploads require explicit cloud consent and a configured Space.
 No compatible public inference Space or real inference run has been verified.
 
+The [public landing page](https://abhays02.github.io/ICR-Studios/#live-demo)
+also offers a consent-gated embed of
+[LightOnAI's official LightOnOCR 3 Space](https://huggingface.co/spaces/lightonai/LightOnOCR-3-Demo).
+That provider-hosted UI is independent of this gateway: it sends chosen uploads
+directly to the provider and does not configure or verify our gateway API adapter.
+Use synthetic documents only. Provider availability and retention policies apply.
+
 ![Separate cloud showcase: synthetic invoice sandbox and explicitly labeled desktop concept, not measured inference.](../docs/media/icr-showcase.png)
 
 ### Run the gateway

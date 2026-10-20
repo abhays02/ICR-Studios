@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Create a draft prerelease (select an existing vX.Y.Z tag)
+        description: Publish a tested prerelease (default branch or existing vX.Y.Z tag)
         type: boolean
         default: false
   push:
@@ -63,6 +63,7 @@ jobs:
         shell: python
         env:
           REQUEST_PUBLISH: ${{ inputs.publish }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           import os, re, tomllib
           ref = os.environ["GITHUB_REF"]
@@ -74,12 +75,17 @@ jobs:
                   version = tomllib.load(stream)["project"]["version"]
               if tag != "v" + version:
                   raise SystemExit("Tag must match pyproject.toml version")
-          elif os.environ.get("REQUEST_PUBLISH", "").lower() == "true":
-              raise SystemExit("Publishing requires selecting an existing version tag")
+          publish = os.environ.get("REQUEST_PUBLISH", "").lower() == "true"
+          default_branch = ref == "refs/heads/" + os.environ["DEFAULT_BRANCH"]
+          if publish and not (tag or default_branch):
+              raise SystemExit("Publishing requires the default branch or an existing version tag")
+          release_tag = tag
+          if default_branch and (os.environ["GITHUB_EVENT_NAME"] == "push" or publish):
+              release_tag = "windows-preview-" + os.environ["GITHUB_SHA"][:12]
           suffix = tag or "preview-" + os.environ["GITHUB_SHA"][:12]
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
               stream.write("artifact=ICR-Studio-windows-x64-" + suffix + "\n")
-              stream.write("release_tag=" + tag + "\n")
+              stream.write("release_tag=" + release_tag + "\n")
       - name: Restore locked CPU application and pinned build tools
         shell: pwsh
         run: |
@@ -129,7 +135,10 @@ jobs:
 
   release:
     needs: build
-    if: needs.build.outputs.release_tag != '' && (github.event_name == 'push' || inputs.publish)
+    if: >-
+      needs.build.outputs.release_tag != '' &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/v')) &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -140,12 +149,22 @@ jobs:
         with:
           name: ${{ needs.build.outputs.artifact }}
           path: release-assets
-      - name: Create draft preview, never a production/OCR release
+      - name: Publish tested preview, never a production/OCR release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
-          gh release create "$RELEASE_TAG" release-assets/*.zip release-assets/*.sha256 \
-            --verify-tag --draft --prerelease --title "Windows manual-review preview $RELEASE_TAG" \
-            --notes "Unsigned Windows x64 one-folder preview. Extract the entire ZIP. No administrator rights required. No OCR models or production-readiness claim. Read docs/CONFIGURATION.md#windows-release-build before initializing keys; protect and back up the separate private workspace and keyring. CI smoke-tested the extracted executable for startup, offline Studio, authentication, sample import, PNG upload, restart persistence and ACL isolation. See the associated Actions run for evidence."
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/*.zip release-assets/*.sha256 --clobber
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+          else
+            tag_args=(--target "$RELEASE_SHA")
+            if [[ "$RELEASE_TAG" == v* ]]; then tag_args=(--verify-tag); fi
+            gh release create "$RELEASE_TAG" release-assets/*.zip release-assets/*.sha256 \
+              "${tag_args[@]}" --prerelease --latest=false \
+              --title "Windows manual-review preview $RELEASE_TAG" \
+              --notes "Unsigned Windows x64 portable preview, not an installer or OCR release. Extract the entire ZIP and double-click RUN-STUDIO.cmd; keep _internal beside the executable. No administrator rights required. Read the bundled README.txt and docs/CONFIGURATION.md#windows-release-build for authentication and private-key backups. CI smoke-tested the extracted executable for startup, offline Studio, authentication, sample import, PNG upload, restart persistence and ACL isolation. Source: $RELEASE_SHA. Build evidence: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
