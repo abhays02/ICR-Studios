@@ -64,13 +64,13 @@ function head(title, description) {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="description" content="${escape(description)}">
-<meta name="theme-color" content="#090b0c"><title>${escape(title)} · ICR Studios</title>
+<meta name="theme-color" content="#0a0c0d"><title>${escape(title)} · ICR Studios</title>
 <link rel="icon" type="image/svg+xml" href="media/icr-mark.svg"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>`;
 }
 
 function header() {
   return `<a class="skip" href="#content">Skip to content</a><header class="site-header">
-<a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true">⌗</span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ FIELD NOTES</span></a>
+<a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true"></span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ FIELD NOTES</span></a>
 <nav aria-label="Main navigation"><a href="index.html#guides">Guides</a><a href="${project}/releases">Releases ↗</a><a class="github-link" href="${project}">GitHub ↗</a></nav></header>`;
 }
 

@@ -60,10 +60,14 @@ function pause() {
 function start() {
   pause();
   if (reducedMotion.matches) return;
+  if (current === steps.length - 1) select(0);
   play.textContent = 'Pause workflow';
   play.setAttribute('aria-pressed', 'true');
   workflow.classList.add('playing');
-  timer = setInterval(() => select(current + 1), Number(speed.value));
+  timer = setInterval(() => {
+    select(current + 1);
+    if (current === steps.length - 1) pause();
+  }, Number(speed.value));
 }
 
 steps.forEach((step, index) => step.addEventListener('click', () => { pause(); select(index); }));

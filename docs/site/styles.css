@@ -2,13 +2,13 @@
 
 :root {
   color-scheme: dark;
-  --bg: #090b0c;
+  --bg: #0a0c0d;
   --panel: #111416;
-  --line: #30363a;
+  --line: #2a2e33;
   --text: #f4f5f6;
-  --muted: #a1aaaf;
+  --muted: #9aa5b3;
   --lime: #a3ff00;
-  --ink: #090b0c;
+  --ink: #0a0c0d;
   --mono: "Courier New", monospace;
   font: 15px/1.65 Arial, Helvetica, sans-serif;
 }
@@ -32,7 +32,7 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 }
 .brand { display: inline-flex; align-items: center; gap: .5rem; font-size: 1.2rem; font-weight: 900; letter-spacing: -.045em; text-decoration: none; color: var(--text); white-space: nowrap; }
 .brand-light { font-weight: 400; }
-.brand-mark { display: grid; place-items: center; width: 31px; height: 31px; color: var(--lime); font: 36px/1 var(--mono); margin-right: .4rem; }
+.brand-mark { display: block; width: 27px; height: 27px; background: repeating-linear-gradient(135deg, var(--lime) 0 3px, transparent 3px 6px); margin-right: .4rem; }
 .brand-docs { font: 10px/1.4 var(--mono); color: var(--muted); letter-spacing: .08em; margin-left: 1.3rem; }
 .site-header nav { display: flex; gap: 2rem; font: 11px/1.5 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .site-header nav a { color: var(--muted); text-decoration: none; }
@@ -101,7 +101,7 @@ noscript p { margin: 1rem 1.5rem; color: var(--muted); }
 .viewfinder::before, .viewfinder::after { content: "+"; position: absolute; color: #7c8a92; font: 22px/1 var(--mono); }
 .viewfinder::before { top: -11px; left: -7px; }
 .viewfinder::after { bottom: -11px; right: -7px; }
-.scene-coordinate { position: absolute; left: 1.5rem; top: 2rem; color: #a1aaaf; font: 9px/1.8 var(--mono); letter-spacing: .04em; }
+.scene-coordinate { position: absolute; left: 1.5rem; top: 2rem; color: var(--muted); font: 9px/1.8 var(--mono); letter-spacing: .04em; }
 .scene-coordinate span { color: #6e797f; }
 .scanner { width: 280px; height: 340px; position: absolute; top: 80px; left: 50%; transform-style: preserve-3d; transform: translateX(-50%) rotateX(24deg) rotateZ(-14deg); scale: 1.2; transition: transform .9s cubic-bezier(.22, 1, .36, 1); }
 .scanner-base { position: absolute; inset: -18px -24px; background: linear-gradient(110deg, #2b3338, #13191d); border: 1px solid #4f5a61; transform: translateZ(-23px); box-shadow: -9px 12px 0 #080a0b, -10px 13px 0 1px #30383c, -20px 28px 35px #000a; }
@@ -340,7 +340,7 @@ footer > span { width: 100%; font: 9px/1.5 var(--mono); letter-spacing: .05em; }
 @media (max-width: 600px) {
   .site-header { min-height: 72px; padding: 1rem; gap: .75rem; }
   .brand { font-size: .95rem; gap: .3rem; }
-  .brand-mark { width: 23px; height: 25px; font-size: 28px; margin-right: .15rem; }
+  .brand-mark { width: 23px; height: 23px; margin-right: .15rem; }
   .site-header nav { gap: .85rem; font-size: .6rem; }
   .github-link { border: 0; padding: 0; }
   .landing main { padding: 0 1.1rem; }
