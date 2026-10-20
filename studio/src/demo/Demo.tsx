@@ -8,6 +8,12 @@ type Phase = 'idle' | 'loading' | 'running' | 'done' | 'error'
 const MAX_BYTES = 10 * 1024 * 1024
 const OFFLINE_STUDIO = 'http://127.0.0.1:8000'
 const LOCAL_STUDIO_NOTE = 'Requires the offline Studio server running locally on port 8000'
+const TOUR = [
+  { title: 'Import', detail: 'Start with the original pixels.', label: '01 / ORIGINAL DOCUMENT' },
+  { title: 'Inspect', detail: 'Keep the evidence in view.', label: '02 / REGION EVIDENCE' },
+  { title: 'Review', detail: 'A human makes the final call.', label: '03 / HUMAN DECISION' },
+  { title: 'Export', detail: 'Carry the reviewed structure forward.', label: '04 / TRACEABLE OUTPUT' },
+]
 const SAMPLE = {
   notice: 'Illustrative sample — not a model result',
   document_type: 'invoice',
@@ -126,9 +132,26 @@ export default function Demo() {
   const [notice, setNotice] = useState('')
   const [dragging, setDragging] = useState(false)
   const [modelAttempt, setModelAttempt] = useState(0)
+  const [tourStage, setTourStage] = useState(0)
+  const [tourMoving, setTourMoving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const controller = useRef<AbortController | null>(null)
   const currentRequest = useRef(0)
+
+  useEffect(() => {
+    if (!tourMoving) return
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const stop = () => setTourMoving(false)
+    if (preference.matches) { stop(); return }
+    const timeout = window.setTimeout(stop, 3200)
+    preference.addEventListener('change', stop)
+    document.addEventListener('visibilitychange', stop)
+    return () => {
+      window.clearTimeout(timeout)
+      preference.removeEventListener('change', stop)
+      document.removeEventListener('visibilitychange', stop)
+    }
+  }, [tourMoving])
 
   useEffect(() => {
     if (!preview) return
@@ -220,21 +243,36 @@ export default function Demo() {
   const running = phase === 'running'
 
   return <div className="demo-shell">
+    <a className="skip-link" href="#sandbox">Skip to playground</a>
     <header className="site-header">
-      <a className="brand" href="/demo/index.html" aria-label="ICR Studios home"><span className="brand-mark">i<span>c</span>r</span><span className="brand-name">ICR<span>STUDIOS</span></span></a>
+      <a className="brand" href="/demo/index.html" aria-label="ICR Studios home"><span className="brand-mark" aria-hidden="true">▧</span><span className="brand-name">ICR STUDIO<span>DOCUMENT INTELLIGENCE WORKSPACE</span></span></a>
       <nav aria-label="Main navigation"><a href="#sandbox">Playground</a><a href="#architecture">Architecture</a><a href="#workbench">The studio</a></nav>
       <a className="header-cta" href={OFFLINE_STUDIO} title={LOCAL_STUDIO_NOTE}>Local studio <Icon size={15} /></a>
     </header>
     <main>
       <section className="hero max-w-7xl mx-auto" aria-labelledby="hero-title">
-        <div className="hero-coordinate" aria-hidden="true">SYS.01 / DOCUMENT INTELLIGENCE</div>
-        <div className="eyebrow"><span className="status-dot" /> LOCAL-FIRST. STRUCTURE-OBSESSED.</div>
-        <h1 id="hero-title">Documents in.<br /><span>Intelligence out.</span></h1>
-        <p className="hero-description">Turn the unstructured into the actionable.<br />A modular OCR workbench for the documents that don’t fit the template.</p>
+        <div className="hero-copy">
+        <div className="eyebrow"><span className="status-dot" /> ORIGINAL PIXELS / HUMAN DECISIONS</div>
+        <h1 id="hero-title">Less black box.<br />More <span>control.</span></h1>
+        <p className="hero-description">From a scanned page to data you can stand behind. Inspect the evidence. Make the correction. Own the final word.</p>
         <div className="hero-actions"><button className="button primary" onClick={tryOwn}>Try your own document <Icon /></button><a className="button ghost" href={OFFLINE_STUDIO} title={LOCAL_STUDIO_NOTE}>Open local studio <Icon name="terminal" /></a></div>
-        <div className="hero-notes"><span><Icon name="shield" size={13} /> Local studio requires a running server.</span><span><Icon name="layers" size={13} /> Model-agnostic by design.</span></div>
-        <div className="hero-cross" aria-hidden="true">+</div>
+        <div className="hero-notes"><span><Icon name="shield" size={13} /> Offline Studio. Separate cloud demo.</span><span>PROTOTYPE / HUMAN REVIEW REQUIRED</span></div>
+        </div>
+        <div className={`hero-instrument ${tourMoving ? 'tour-moving' : ''}`} data-stage={tourStage}>
+          <div className="instrument-top"><span><span className="status-dot" /> DOCUMENT / 0042</span><span>ILLUSTRATED WORKFLOW</span></div>
+          <div className="instrument-canvas">
+            <span className="canvas-coordinate" aria-hidden="true">X 000 / Y 000</span>
+            <div className="instrument-paper"><Invoice /><div className="instrument-scan" aria-hidden="true" /></div>
+            <div className="evidence-callout"><span>REGION / TOTAL DUE</span><strong>1,650.00 <small>USD</small></strong><span>SYNTHETIC EXAMPLE</span></div>
+            <div className="decision-callout"><Icon name={tourStage === 3 ? 'file' : 'check'} size={15} /><span>{tourStage === 3 ? 'JSON / CSV' : 'Human review'}<small>{tourStage === 3 ? 'Reviewed export · illustrated' : 'Your decision, not an assumption.'}</small></span></div>
+            <span className="canvas-axis" aria-hidden="true">+ ORIGINAL EVIDENCE +</span>
+          </div>
+          <div className="instrument-readout"><span>{TOUR[tourStage].label}</span><button onClick={() => setTourMoving(value => !value)} aria-pressed={tourMoving}>{tourMoving ? 'Stop motion' : 'Animate scan'} <span aria-hidden="true">{tourMoving ? 'Ⅱ' : '↗'}</span></button></div>
+          <div className="tour-steps" role="group" aria-label="Illustrated workflow stages">{TOUR.map((stage, index) => <button key={stage.title} aria-pressed={tourStage === index} onClick={() => setTourStage(index)}><span>0{index + 1}</span>{stage.title}</button>)}</div>
+          <p className="tour-detail" aria-live="polite">{TOUR[tourStage].detail} Illustration only, not an extraction.</p>
+        </div>
       </section>
+      <div className="workflow-rail" aria-label="Workflow principles"><span>01 / ORIGINAL EVIDENCE</span><span>02 / EXPLICIT CORRECTIONS</span><span>03 / TRACEABLE OUTPUT</span><span className="rail-end">NO INVENTED CONFIDENCE <span aria-hidden="true">↘</span></span></div>
 
       <section className="sandbox-section" id="sandbox" aria-labelledby="sandbox-title">
         <div className="section-heading"><div><span className="section-index">01 / LIVE SANDBOX</span><h2 id="sandbox-title">See the structure beneath.</h2></div><span className="technical-label"><span className="status-dot" /> {running ? 'GATEWAY REQUEST ACTIVE' : 'ILLUSTRATIVE UNTIL YOU RUN'}</span></div>
@@ -296,7 +334,7 @@ export default function Demo() {
             <aside className="mockup-sidebar"><div className="mini-logo">icr<span> / STUDIO</span></div><div className="mockup-nav active"><Icon name="layers" size={13} /> Overview</div><div className="mockup-nav"><Icon name="file" size={13} /> Documents</div><div className="mockup-nav"><Icon name="check" size={13} /> Review queue</div><div className="mockup-nav"><Icon name="terminal" size={13} /> Adapters</div><span className="mockup-local"><span className="status-dot" /> LOCAL WORKSPACE</span></aside>
             <div className="mockup-content"><div className="mockup-title"><span>Workspace overview<small>Example data · no live activity</small></span><span className="panel-tag">DEMO WORKSPACE</span></div>
               <div className="mockup-stats"><div><small>DOCUMENTS</small><strong>24<span>sample files</span></strong></div><div><small>REVIEW QUEUE</small><strong>06<span>example tasks</span></strong></div><div><small>ADAPTER</small><strong className="adapter-value">TrOCR<span>local harness</span></strong></div></div>
-              <div className="mockup-chart"><span>Example processing activity <small>ILLUSTRATIVE ONLY</small></span><svg viewBox="0 0 500 105" role="img" aria-label="Decorative example activity chart; not measured data"><path className="chart-grid" d="M0 20H500M0 50H500M0 80H500" /><path className="chart-area" d="M0 89 35 82 70 87 105 59 140 69 175 47 210 53 245 23 280 39 315 27 350 40 385 13 420 26 455 11 500 18V105H0Z" /><path className="chart-line" d="m0 89 35-7 35 5 35-28 35 10 35-22 35 6 35-30 35 16 35-12 35 13 35-27 35 13 35-15 45 7" /></svg><div className="chart-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span></div></div>
+              <div className="mockup-review"><div className="mockup-paper"><Invoice /></div><div className="mockup-inspector"><span className="section-index">FIELD INSPECTOR</span><h3>Review, don’t assume.</h3><div className="mockup-field">Selected field<span>Total due</span></div><div className="mockup-field">Original example<span>1,650.00 USD</span></div><div className="mockup-review-note">Human correction<br /><strong>Evidence stays intact.</strong></div></div></div>
               <div className="mockup-table"><div><span>EXAMPLE DOCUMENT</span><span>WORKFLOW</span><span>STATE</span></div>{[['invoice_sample_01.pdf', 'Invoice', 'Reviewed'], ['intake_sample_02.png', 'Form', 'Needs review'], ['receipt_sample_03.jpg', 'Receipt', 'Reviewed']].map(row => <div key={row[0]}><span><Icon name="file" size={11} />{row[0]}</span><span>{row[1]}</span><span className={row[2] === 'Reviewed' ? 'reviewed' : ''}>{row[2]}</span></div>)}</div>
             </div>
           </div>

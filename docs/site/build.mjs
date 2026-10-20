@@ -64,20 +64,20 @@ function head(title, description) {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="description" content="${escape(description)}">
-<meta name="theme-color" content="#111310"><title>${escape(title)} · ICR Studios</title>
+<meta name="theme-color" content="#090b0c"><title>${escape(title)} · ICR Studios</title>
 <link rel="icon" type="image/svg+xml" href="media/icr-mark.svg"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>`;
 }
 
 function header() {
   return `<a class="skip" href="#content">Skip to content</a><header class="site-header">
-<a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true">i</span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ docs</span></a>
+<a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true">⌗</span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ FIELD NOTES</span></a>
 <nav aria-label="Main navigation"><a href="index.html#guides">Guides</a><a href="${project}/releases">Releases ↗</a><a class="github-link" href="${project}">GitHub ↗</a></nav></header>`;
 }
 
 function scene(workflow) {
   return `<figure class="scanner-scene" aria-labelledby="scene-caption">
-<div class="scene-topline"><span><i class="status-dot"></i>THE REVIEW WORKSPACE</span><span>FIG. 01 / 3D STUDY</span></div>
-<div class="scene-world" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+<div class="scene-topline"><span><i class="status-dot"></i>DOCUMENT VIEWPORT</span><span>001 / SYNTHETIC STUDY</span></div>
+<div class="scene-world" aria-hidden="true"><div class="viewfinder"></div><div class="scene-coordinate">X 0240<br>Y 0180<br><span>1:1 / SOURCE</span></div>
 <div class="scanner"><div class="scanner-base"></div><div class="scanner-bed"></div><div class="scanner-rail rail-left"></div><div class="scanner-rail rail-right"></div>
 <div class="paper paper-under"></div><div class="paper document"><div class="paper-top"><b>ICR</b><span>SYNTHETIC FORM<br>REVIEW COPY / 001</span></div>
 <div class="paper-rule"></div><div class="paper-label">ACCOUNT HOLDER</div><div class="handwritten">Alex Morgan</div>
@@ -85,15 +85,16 @@ function scene(workflow) {
 <div class="paper-lines"></div><div class="paper-label">REVIEW NOTE</div><div class="paper-note">Human verified</div><div class="region region-amount"></div>
 <div class="paper-bottom">FICTIONAL DATA ONLY<span>01 / 01</span></div><div class="scan-beam"></div></div>
 <div class="scanner-bridge"><span>ICR / OPTICAL REVIEW</span><i></i><i></i><i></i></div></div>
-<div class="scene-tag tag-input"><span>01 / SOURCE</span>Original pixels</div>
-<div class="scene-tag tag-evidence"><span>02 / EVIDENCE</span><b>Inspect the region</b></div>
+<div class="scene-tag tag-input"><span>01 / SOURCE</span><b>The original. Always.</b><small>FICTIONAL FORM / 001</small></div>
+<div class="scene-tag tag-evidence"><span>02 / EVIDENCE</span><b>Inspect the region</b><small>PIXELS BEFORE PREDICTIONS</small></div>
 <div class="scene-tag tag-correction"><span>03 / HUMAN REVIEW</span><b>Correction saved</b><i>✓</i></div>
-<div class="scene-tag tag-export"><span>04 / OUTPUT</span><b>{ } JSON / CSV</b></div>
-</div><figcaption id="scene-caption"><span class="scene-stage">${escape(workflow.steps[0][0])}</span><span>CSS illustration · not live OCR</span></figcaption></figure>`;
+<div class="scene-tag tag-export"><span>04 / OUTPUT</span><b>{ } JSON / CSV</b><small>TRACEABLE BY DESIGN</small></div>
+<div class="scene-scale">−<span></span>+<b>ORIGINAL → EVIDENCE → DECISION</b></div>
+</div><figcaption id="scene-caption"><span class="scene-stage">${escape(workflow.steps[0][0])}</span><span>Interactive illustration / not live OCR</span></figcaption></figure>`;
 }
 
 function workflowPanel(workflow) {
-  return `<section class="workflow" data-stage="0" aria-labelledby="workflow-title"><div class="section-heading"><div><p class="eyebrow">EXPLORE THE PROCESS</p>
+  return `<section class="workflow" data-stage="0" aria-labelledby="workflow-title"><div class="section-heading"><div><p class="eyebrow">WORKSPACE STUDY / 01</p>
 <h2 id="workflow-title">${escape(workflow.label)}</h2></div><span id="step-count">1 / ${workflow.steps.length}</span></div>
 <div class="workflow-body">${scene(workflow)}<ol class="steps">${workflow.steps.map(([title, detail], index) =>
     `<li><button class="step" type="button" data-step="${index}" aria-pressed="${index === 0}"><span class="step-number">0${index + 1}</span><strong>${escape(title)}</strong><span>${escape(detail)}</span></button></li>`).join('')}</ol></div>
@@ -130,12 +131,12 @@ function landing() {
   ];
   return `${head('Document intelligence. Human judgment.', 'Explore ICR Studios: local document review, explicit human corrections and traceable exports. Complete guides and an interactive CSS 3D workflow.')}
 <body class="landing">${header()}<main id="content">
-<section class="landing-hero" aria-labelledby="landing-title"><div class="landing-intro"><p class="eyebrow"><span class="tiny-cross">+</span> DOCUMENT INTELLIGENCE / HUMAN AUTHORITY</p>
-<h1 id="landing-title">Every document.<br>A clearer <em>picture.</em></h1>
-<p class="hero-lede">From the original scan to the final decision.<br>A local-first workspace to inspect, correct and export—with you in control.</p>
+<section class="landing-hero" aria-labelledby="landing-title"><div class="landing-intro"><div class="hero-title-block"><p class="eyebrow"><span class="tiny-cross">+</span> DOCUMENT INTELLIGENCE. HUMAN AUTHORITY.</p>
+<h1 id="landing-title">Every line.<br><em>In your hands.</em></h1></div><div class="hero-context"><p class="hero-kicker">THE SIGNAL IS IN THE DETAILS.</p>
+<p class="hero-lede">The original scan. The supporting evidence.<br>The judgment only you can make.</p><p class="hero-description">A local-first document workspace.<br>Inspect, correct and export. On your terms.</p>
 <div class="hero-actions"><a class="button button-primary" href="${link('docs/CONFIGURATION.md#source-runtime')}">Start locally <span>↗</span></a><a class="button button-secondary" href="#guides">Explore the guides <span>↓</span></a></div>
 <p class="prototype-note"><span class="status-dot"></span> MANUAL-REVIEW PROTOTYPE<br><span>No bundled weights or validated OCR accuracy.<br>Illustration, not a live inference result.</span></p>
-<div class="intro-index"><span>01 — IMPORT</span><span>02 — INSPECT</span><span>03 — CORRECT</span><span>04 — EXPORT</span></div></div>
+ </div><div class="intro-index"><span>01 — IMPORT</span><span>02 — INSPECT</span><span>03 — CORRECT</span><span>04 — EXPORT</span><span class="index-end">SCROLL TO EXPLORE ↓</span></div></div>
 ${workflowPanel(workflows['README.md'])}</section>
 <section class="principles" aria-label="Project boundaries"><div><span>01 / LOCAL STUDIO</span><p>Your documents stay in the local workflow.<br>No remote inference fallback.</p></div><div><span>02 / EXPLICIT REVIEW</span><p>Model evidence and human corrections<br>remain separate and traceable.</p></div><div><span>03 / HONEST BOUNDARIES</span><p>A working review flow, not a claim<br>of production-ready recognition.</p></div></section>
 <section class="guide-section" id="guides" aria-labelledby="guides-title"><div class="editorial-heading"><div><p class="eyebrow">FIND YOUR WAY IN</p><h2 id="guides-title">Less searching.<br>More understanding.</h2></div><p>Choose a starting point.<br>Every guide is here, in full.</p></div>
