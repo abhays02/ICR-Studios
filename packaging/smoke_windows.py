@@ -66,6 +66,8 @@ def main():
     if sys.platform != "win32":
         raise SystemExit("Authentic executable smoke requires Windows")
     executable = args.executable.resolve()
+    assert (executable.parent / "RUN-STUDIO.cmd").is_file()
+    assert (executable.parent / "README.txt").is_file()
     root = args.root.resolve()
     root.mkdir(parents=True, exist_ok=False)
     unrelated = root / "unrelated-working-directory"

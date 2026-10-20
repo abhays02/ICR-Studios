@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -48,6 +49,8 @@ def main():
     command.append(str(ROOT / "packaging/windows_entry.py"))
     subprocess.run(command, cwd=ROOT, check=True)
     bundle = ROOT / "dist/ICR-Studio"
+    for source, name in (("RUN-STUDIO.cmd", "RUN-STUDIO.cmd"), ("WINDOWS-README.txt", "README.txt")):
+        shutil.copyfile(ROOT / "packaging" / source, bundle / name)
     files = sorted(path for path in bundle.rglob("*") if path.is_file())
     forbidden = {"web_demo", ".git", "var", ".env", "windows-secrets.json", "secrets.env",
                  "icr.sqlite3", "torch", "transformers"}

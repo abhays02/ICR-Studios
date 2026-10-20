@@ -9,6 +9,8 @@ const root = path.resolve(here, '../..');
 const out = path.join(here, 'dist');
 const project = 'https://github.com/abhays02/ICR-Studios';
 const repository = `${project}/blob/main/`;
+const lightOnSpace = 'https://huggingface.co/spaces/lightonai/LightOnOCR-3-Demo';
+const lightOnEmbed = 'https://lightonai-lightonocr-3-demo.hf.space';
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[char]));
@@ -59,10 +61,10 @@ function resolveURL(href, page, image = false) {
   return repository + source.split('/').map(encodeURIComponent).join('/') + suffix;
 }
 
-function head(title, description) {
+function head(title, description, externalDemo = false) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; frame-src ${externalDemo ? lightOnEmbed : "'none'"}; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="description" content="${escape(description)}">
 <meta name="theme-color" content="#0a0c0d"><title>${escape(title)} · ICR Studios</title>
 <link rel="icon" type="image/svg+xml" href="media/icr-mark.svg"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>`;
@@ -71,7 +73,7 @@ function head(title, description) {
 function header() {
   return `<a class="skip" href="#content">Skip to content</a><header class="site-header">
 <a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true"></span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ FIELD NOTES</span></a>
-<nav aria-label="Main navigation"><a href="index.html#guides">Guides</a><a href="${project}/releases">Releases ↗</a><a class="github-link" href="${project}">GitHub ↗</a></nav></header>`;
+<nav aria-label="Main navigation"><a href="index.html#live-demo">Live OCR</a><a href="index.html#guides">Guides</a><a href="${project}/releases">Releases ↗</a><a class="github-link" href="${project}">GitHub ↗</a></nav></header>`;
 }
 
 function scene(workflow) {
@@ -113,6 +115,31 @@ function footer(page) {
   return `<footer><a class="brand" href="index.html">ICR<span class="brand-light">STUDIOS</span></a><p>Evidence first. Human authority, always.</p><a href="${page ? repository + page.source : project}">${page ? 'View Markdown source' : 'Explore the repository'} ↗</a><span>Public docs · Synthetic illustrations only</span></footer>`;
 }
 
+function showcase() {
+  return `<section class="showcase-section" id="showcase" aria-labelledby="showcase-title">
+<div class="editorial-heading"><div><p class="eyebrow">WATCH THE REAL WORKSPACE</p><h2 id="showcase-title">Import. Inspect.<br>Correct. Export.</h2></div>
+<p>18-second recording with fictional data.<br>Manual review, not successful OCR.<br>Recorded before the visual redesign.</p></div>
+<figure class="recording"><img src="media/studio-review.png" data-recording="media/studio-walkthrough.gif" alt="Recorded Studio workflow: import a fictional fixture, inspect regions, save a correction and export draft JSON." loading="lazy">
+<button class="recording-toggle" type="button" aria-pressed="false" hidden>Play recorded Studio demo</button>
+<figcaption>Real running Studio; one field reviewed. <a href="media/studio-walkthrough.gif">Open the recording directly</a>.</figcaption></figure></section>
+<section class="showcase-section" id="live-demo" aria-labelledby="live-demo-title">
+<div class="editorial-heading"><div><p class="eyebrow">REAL MODEL / EXTERNAL PROVIDER</p><h2 id="live-demo-title">Try LightOnOCR.<br>With your own sample.</h2></div>
+<p>LightOnAI's interactive Hugging Face Space.<br>Separate from the offline Studio.<br>Not the illustrated workflow above.</p></div>
+<p>Use <strong>synthetic documents only</strong>. Loading the Space connects your browser to Hugging Face/LightOnAI.
+Files you choose inside it are sent directly to that external provider, subject to its terms and retention policies.
+Never upload banking records, personal information, workspace keys or tokens.</p>
+<p>Availability, cold starts, queues and model errors are controlled by the provider. No measured accuracy or local OCR support is implied.</p>
+<p><a href="${lightOnSpace}" target="_blank" rel="noopener noreferrer">Open the official LightOnOCR 3 Space in a new tab ↗</a>
+· <a href="studio-README.html#separate-public-demo">About our separate gateway showcase</a></p>
+<div class="cloud-controls"><label><input id="space-consent" type="checkbox"> I understand this is an external cloud service and will use synthetic data only.</label>
+<button class="button button-primary" id="load-space" type="button" disabled hidden>Load interactive LightOnOCR</button>
+<button class="button button-secondary" id="unload-space" type="button" hidden>Disconnect demo</button></div>
+<p id="space-status" role="status" aria-live="polite">Not connected. No external Space is loaded until you consent and select Load.</p>
+<div id="space-container" data-space-origin="${lightOnEmbed}"></div>
+<p>If the embedded Space is unavailable, asleep, or blocked by your browser, use the official Space link above. Disconnecting removes the frame; it cannot undo provider uploads or guarantee remote deletion.</p>
+<noscript><p>JavaScript is off. Read the privacy notice above before opening the official Space link.</p></noscript></section>`;
+}
+
 function landing() {
   const link = (source) => {
     const [file, fragment] = source.split('#');
@@ -129,16 +156,17 @@ function landing() {
     ['05', 'For evaluators', 'Evidence before accuracy claims.', 'Separate implemented review features from model availability, measured accuracy and open gates.', 'docs/STATUS.md', 'See implementation status'],
     ['06', 'For maintainers', 'Understand what stays private.', 'Trace local storage, the worker and the human review boundary through the architecture.', 'docs/DESIGN.md', 'Explore the architecture'],
   ];
-  return `${head('Document intelligence. Human judgment.', 'Explore ICR Studios: local document review, explicit human corrections and traceable exports. Complete guides and an interactive CSS 3D workflow.')}
+  return `${head('Document intelligence. Human judgment.', 'Explore ICR Studios: local document review, a recorded workflow and an opt-in external LightOnOCR demo.', true)}
 <body class="landing">${header()}<main id="content">
 <section class="landing-hero" aria-labelledby="landing-title"><div class="landing-intro"><div class="hero-title-block"><p class="eyebrow"><span class="tiny-cross">+</span> DOCUMENT INTELLIGENCE. HUMAN AUTHORITY.</p>
 <h1 id="landing-title">Every line.<br><em>In your hands.</em></h1></div><div class="hero-context"><p class="hero-kicker">THE SIGNAL IS IN THE DETAILS.</p>
 <p class="hero-lede">The original scan. The supporting evidence.<br>The judgment only you can make.</p><p class="hero-description">A local-first document workspace.<br>Inspect, correct and export. On your terms.</p>
-<div class="hero-actions"><a class="button button-primary" href="${link('docs/CONFIGURATION.md#source-runtime')}">Start locally <span>↗</span></a><a class="button button-secondary" href="#guides">Explore the guides <span>↓</span></a></div>
+<div class="hero-actions"><a class="button button-primary" href="#live-demo">Try live OCR <span>↓</span></a><a class="button button-secondary" href="#showcase">Watch the workflow <span>↓</span></a><a class="button button-secondary" href="${project}/releases">Windows downloads <span>↗</span></a></div>
 <p class="prototype-note"><span class="status-dot"></span> MANUAL-REVIEW PROTOTYPE<br><span>No bundled weights or validated OCR accuracy.<br>Illustration, not a live inference result.</span></p>
  </div><div class="intro-index"><span>01 — IMPORT</span><span>02 — INSPECT</span><span>03 — CORRECT</span><span>04 — EXPORT</span><span class="index-end">SCROLL TO EXPLORE ↓</span></div></div>
 ${workflowPanel(workflows['README.md'])}</section>
 <section class="principles" aria-label="Project boundaries"><div><span>01 / LOCAL STUDIO</span><p>Your documents stay in the local workflow.<br>No remote inference fallback.</p></div><div><span>02 / EXPLICIT REVIEW</span><p>Model evidence and human corrections<br>remain separate and traceable.</p></div><div><span>03 / HONEST BOUNDARIES</span><p>A working review flow, not a claim<br>of production-ready recognition.</p></div></section>
+${showcase()}
 <section class="guide-section" id="guides" aria-labelledby="guides-title"><div class="editorial-heading"><div><p class="eyebrow">FIND YOUR WAY IN</p><h2 id="guides-title">Less searching.<br>More understanding.</h2></div><p>Choose a starting point.<br>Every guide is here, in full.</p></div>
 <div class="role-grid">${roles.map(([number, role, title, detail, source, cta]) =>
     `<a class="role-card" href="${link(source)}"><div class="role-meta"><span>${number} / ${role}</span><span aria-hidden="true">↗</span></div><h3>${title}</h3><p>${detail}</p><span class="card-cta">${cta} <span aria-hidden="true">→</span></span></a>`).join('')}</div></section>

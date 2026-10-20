@@ -136,15 +136,18 @@ the Windows-specific protection and runtime limits below.
 
 The **Windows manual-review preview** workflow builds on Windows x64 and uploads
 only a smoke-tested ZIP plus its SHA-256 checksum. Preview artifacts expire after
-14 days; published release assets are separate. A version tag must match
-`pyproject.toml` exactly (`vX.Y.Z`). Tag builds, or manual runs on an existing
-version tag with publishing enabled, create a **draft prerelease** for maintainer
-review—not an automatically public production release. Manual non-publishing
-branch builds produce only Actions artifacts.
+14 days; published release assets are separate. Successful default-branch pushes
+automatically publish a public **prerelease** tagged `windows-preview-<commit>`.
+A version tag must match `pyproject.toml` exactly (`vX.Y.Z`); tag pushes also
+publish prereleases. Manual runs can publish from the default branch or an
+existing version tag when publishing is enabled. Pull requests, feature branches
+and manual non-publishing branch builds produce only Actions artifacts.
+Reruns update the same release assets rather than failing on an existing release.
+These are unsigned previews, never automatically designated production/latest releases.
 
-1. Check the successful Windows workflow run and download its artifact, or use
-   [Releases](https://github.com/abhays02/ICR-Studios/releases) after a maintainer
-   publishes the reviewed draft. No successful Windows build is implied by a
+1. Download the ZIP and checksum from
+   [Releases](https://github.com/abhays02/ICR-Studios/releases), or from a successful
+   Windows workflow run's artifacts. No successful Windows build is implied by a
    successful Linux/source build.
 2. Compare the downloaded ZIP with the accompanying `.sha256` using PowerShell
    `Get-FileHash -Algorithm SHA256`. A checksum detects corruption; it is not a
@@ -152,7 +155,9 @@ branch builds produce only Actions artifacts.
    trust policy rather than bypassing security warnings.
 3. Extract the **whole** ZIP into a user-owned folder. Keep `ICR-Studio.exe`,
    `_internal/` and the bundle manifest together. Do not run as administrator.
-4. In PowerShell, change to the extracted `ICR-Studio` directory and run:
+4. Double-click **RUN-STUDIO.cmd** in the extracted folder. It initializes secrets
+   only on first use and keeps startup errors visible; read the bundled **README.txt**.
+   Alternatively, in PowerShell, change to the extracted `ICR-Studio` directory and run:
 
 ```powershell
 .\ICR-Studio.exe init-secrets
@@ -160,6 +165,9 @@ branch builds produce only Actions artifacts.
 ```
 
 Open **http://127.0.0.1:8000**. Initialization refuses to overwrite existing keys.
+On subsequent launches, run only `serve` (or use **RUN-STUDIO.cmd**).
+The executable is a command-line server, not an installer: double-clicking the
+bare `.exe` without a command prints usage and exits.
 To unlock Studio, privately open
 `%LOCALAPPDATA%\ICR-Studio\var\windows-secrets.json` and use **only the token
 key inside the nested `ICR_TOKENS` JSON mapping**, not `ICR_KEYS`, the complete

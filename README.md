@@ -4,7 +4,7 @@
 
 [![ICR Studios at a glance: import a scan, inspect original pixels, save human corrections, export traceable JSON or CSV. Public documentation stays separate from the private local workspace.](docs/media/project-overview.svg)](https://abhays02.github.io/ICR-Studios/)
 
-[**Explore the interactive site ↗**](https://abhays02.github.io/ICR-Studios/) · [**Start locally**](#start-locally) · [**Release builds**](https://github.com/abhays02/ICR-Studios/releases) · [**Read the guides**](#find-your-guide)
+[**Try live LightOnOCR ↗**](https://abhays02.github.io/ICR-Studios/#live-demo) · [**Watch the workflow**](#watch-the-real-recorded-workflow) · [**Start locally**](#start-locally) · [**Windows downloads**](https://github.com/abhays02/ICR-Studios/releases) · [**Read the guides**](#find-your-guide)
 
 The site URL above is the default GitHub Pages target; it becomes available after
 the publishing workflow succeeds and Pages is enabled. GitHub Markdown cannot
@@ -19,7 +19,7 @@ run interactive 3D scenes—follow the image to the separate animated experience
 | Space | Purpose | Runs where? |
 | --- | --- | --- |
 | **Offline Studio** | Inspect scans, edit regions, save corrections, export results | Your computer; React + FastAPI, encrypted private storage |
-| **Public landing & guides** | Interactive illustrated workflows, full reference docs, recorded demos | Static GitHub Pages; no API, credentials or uploads |
+| **Public landing & guides** | Recorded workflow, illustrated guides, opt-in external LightOnOCR Space | Static GitHub Pages; no local API or credentials; consented uploads go directly to Hugging Face |
 | **Optional cloud showcase** | Synthetic illustration or explicitly consented provider extraction | Separate frontend + gateway; **not** included in offline Studio |
 
 No cloud fallback or automatic weight downloads. The local TrOCR adapter still
@@ -42,8 +42,7 @@ re-upload. Five fictional fixtures are importable; the skewed sixth is blocked.
 
 [Operator walkthrough](docs/STUDIO.md) · [Architecture & local boundaries](docs/DESIGN.md) · [Fixture provenance](data/samples/README.md)
 
-<details>
-<summary>Watch the real recorded workflow</summary>
+## Watch the real recorded workflow
 
 ![Import a fictional fixture, inspect regions, observe missing weights, save a correction, export draft JSON.](docs/media/studio-walkthrough.gif)
 
@@ -52,7 +51,14 @@ Only one field is reviewed: this is **not** successful OCR or final approval.
 The recording predates the visual redesign. The docs site offers optional
 GIF playback with a still poster and stop control.
 
-</details>
+### Try real LightOnOCR on Hugging Face
+
+[**Open the landing-page live demo**](https://abhays02.github.io/ICR-Studios/#live-demo)
+or [visit LightOnAI's LightOnOCR 3 Space directly](https://huggingface.co/spaces/lightonai/LightOnOCR-3-Demo).
+The landing page loads the external interactive Space only after consent.
+Use synthetic documents only: uploads go to Hugging Face/LightOnAI, not to
+your offline workspace. Availability, queues and provider retention are external;
+this is not a bundled model or a claim of validated handwriting accuracy.
 
 ## Start locally
 
@@ -75,8 +81,11 @@ Stop with **Ctrl-C**; reload or **Lock workspace** clears the in-memory browser 
 [Separate cloud showcase setup](studio/README.md#separate-public-demo)
 
 Windows binaries are built and smoke-tested by the Windows release workflow.
-No downloadable executable is claimed until that workflow succeeds; see the
-release assets and build logs. Builds are **unsigned review prototypes**.
+Successful default-branch builds publish public **prereleases**, not production releases.
+Download the ZIP and checksum from [Releases](https://github.com/abhays02/ICR-Studios/releases),
+extract the whole folder, then double-click **RUN-STUDIO.cmd** and follow its
+bundled **README.txt**. Do not run the bare `.exe` without its supporting files
+or commands. Builds are **unsigned review prototypes** without OCR weights.
 
 ## What works today?
 
