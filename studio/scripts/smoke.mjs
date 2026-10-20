@@ -91,17 +91,22 @@ try {
   let release
   const gate=new Promise(resolve=>{release=resolve})
   const uploadRoute=/\/api\/v1\/documents\?/
-  // Delay dispatch, but never substitute a response: retries go to the real API.
-  await page.route(uploadRoute,async route=>{await gate;await route.continue().catch(()=>{})})
+  // Hold dispatch until cancellation, then abort: never forward the cancelled upload.
+  await page.route(uploadRoute,async route=>{await gate;await route.abort('aborted').catch(()=>{})})
   await upload.setInputFiles([resolve(root,'data/samples/01-car.png'),resolve(root,'data/samples/01-car.png')])
   await page.locator('.queue-item').nth(1).getByRole('button',{name:'Cancel upload',exact:true}).click()
   await page.locator('.queue-item').first().getByRole('button',{name:'Cancel upload',exact:true}).click()
   assert.equal(await page.getByText('cancelled',{exact:true}).count(),2)
   release()
   await page.unroute(uploadRoute)
+  const uploadResponses=[]
+  page.on('response',response=>{
+    if(response.request().method()==='POST'&&uploadRoute.test(response.url()))uploadResponses.push(response.status())
+  })
   await page.locator('.queue-item').first().getByRole('button',{name:'Retry upload',exact:true}).click()
   await page.locator('.queue-item').nth(1).getByRole('button',{name:'Retry upload',exact:true}).click()
   await page.waitForFunction(()=>[...document.querySelectorAll('.queue-item small')].filter(e=>e.textContent==='stored').length===2)
+  assert.deepEqual(uploadResponses,[201,201])
   checks.push('two-file native XHR queue: actual queued/active cancellation and explicit successful retries')
   const bytes=await readFile(resolve(root,'data/samples/01-car.png'))
   const transfer=await page.evaluateHandle(bytes=>{
