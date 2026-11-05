@@ -1,0 +1,213 @@
+/* ============================================================================
+   NAYEN v1 — ICR Studios design tokens
+   Single source of truth. Consumed by:
+     web/       (Vercel: immersive landing + live engine demo)
+     studio/    (Windows .exe: operator workspace)
+     docs/site/ (GitHub Pages: SDK + Studio documentation)
+   Do not hardcode values in those surfaces. Import this file.
+   ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------- color
+     "Ink & Signal": graphite instrumentation base, warm paper surfaces,
+     one semantic accent (verified teal) and one semantic warn (amber).
+     Accents encode confidence state, so colour carries meaning, not decor. */
+  --ink-950: #07080a;
+  --ink-900: #0b0d10;
+  --ink-850: #101317;
+  --ink-800: #16191f;
+  --ink-700: #1e222a;
+  --ink-600: #2a2f39;
+  --ink-500: #3a414d;
+  --ink-400: #5b6472;
+  --ink-300: #868f9e;
+  --ink-200: #b6bcc6;
+  --ink-100: #dfe2e7;
+
+  --paper:     #f7f6f3;
+  --paper-dim: #eceae5;
+  --paper-low: #dedbd4;
+
+  /* signal — verified / high confidence */
+  --signal-600: #00775f;
+  --signal-500: #00a88e;
+  --signal-400: #1fc4a8;
+  --signal-300: #6fdcc7;
+  --signal-glow: rgba(0, 168, 142, 0.32);
+
+  /* warn — needs human review / low confidence */
+  --warn-600: #a86c07;
+  --warn-500: #e4a11b;
+  --warn-400: #f2bb4d;
+  --warn-glow: rgba(228, 161, 27, 0.28);
+
+  /* fault — rejected / invalid evidence */
+  --fault-600: #a3283a;
+  --fault-500: #d94a5f;
+  --fault-400: #ec7d8c;
+
+  /* semantic aliases (dark surface, the default) */
+  --bg: var(--ink-900);
+  --bg-raised: var(--ink-850);
+  --bg-sunken: var(--ink-950);
+  --surface: var(--ink-800);
+  --surface-hover: var(--ink-700);
+  --border: var(--ink-700);
+  --border-strong: var(--ink-600);
+  --fg: var(--ink-100);
+  --fg-muted: var(--ink-300);
+  --fg-faint: var(--ink-400);
+  --accent: var(--signal-500);
+  --accent-soft: var(--signal-glow);
+
+  /* ------------------------------------------------------------- typography
+     Deliberate pairing, no default-AI faces. Extreme weight + 3x size jumps. */
+  --font-display: 'Space Grotesk', 'Bricolage Grotesque', Georgia, serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', Helvetica, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* display: 6x body, tight, confident */
+  --text-display: clamp(2.75rem, 8vw, 6.5rem);
+  --text-hero: clamp(2.25rem, 5.6vw, 4.5rem);
+  --text-h1: clamp(1.9rem, 3.4vw, 3rem);
+  --text-h2: clamp(1.4rem, 2.2vw, 2rem);
+  --text-h3: clamp(1.05rem, 1.4vw, 1.35rem);
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-caption: 0.75rem;
+  --text-micro: 0.6875rem;
+
+  --leading-tight: 1.02;
+  --leading-snug: 1.18;
+  --leading-normal: 1.55;
+  --leading-loose: 1.72;
+
+  --tracking-display: -0.035em;
+  --tracking-headline: -0.02em;
+  --tracking-body: 0;
+  --tracking-caps: 0.14em;
+
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------------------------------------------------------------- spacing
+     8px rhythm with deliberate large steps for cinematic breathing room. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 9rem;
+  --space-section: clamp(4.5rem, 11vh, 9rem);
+
+  --measure: 68ch;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --shell: 84rem;
+
+  /* ------------------------------------------------------------------ radii */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---------------------------------------------------------------- shadows */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.42);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-4: 0 28px 64px rgba(0, 0, 0, 0.58);
+  --shadow-signal: 0 0 0 1px var(--signal-600), 0 12px 40px var(--signal-glow);
+  --inset-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  /* ----------------------------------------------------------------- motion
+     Curves chosen per intent; never linear, never one curve everywhere. */
+  --ease-out: cubic-bezier(0.16, 0.84, 0.28, 1);
+  --ease-in-out: cubic-bezier(0.62, 0.02, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.42, 0.5, 1);
+  --ease-cine: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 380ms;
+  --dur-4: 620ms;
+  --dur-5: 900ms;
+  --dur-6: 1400ms;
+
+  /* stagger steps for orchestrated reveals */
+  --stagger: 70ms;
+
+  /* --------------------------------------------------------------- 3d scene */
+  --perspective: 1400px;
+  --perspective-deep: 2200px;
+  --tilt-x: 14deg;
+  --tilt-y: -22deg;
+  --preserve-3d: preserve-3d;
+
+  /* ------------------------------------------------------------------ layer */
+  --z-base: 0;
+  --z-scene: 10;
+  --z-content: 20;
+  --z-sticky: 40;
+  --z-nav: 60;
+  --z-overlay: 80;
+  --z-toast: 100;
+
+  /* ----------------------------------------------------------------- effect */
+  --blur-glass: 18px;
+  --grain-opacity: 0.035;
+  --hairline: 1px solid var(--border);
+  --grid-line: rgba(255, 255, 255, 0.028);
+  --scanline: rgba(0, 168, 142, 0.5);
+}
+
+/* Light surface — used by documentation reading panes and printed exports. */
+[data-theme='light'] {
+  --bg: var(--paper);
+  --bg-raised: #fdfcfa;
+  --bg-sunken: var(--paper-dim);
+  --surface: #ffffff;
+  --surface-hover: var(--paper-dim);
+  --border: var(--paper-low);
+  --border-strong: #c9c5bc;
+  --fg: #14171c;
+  --fg-muted: #525a66;
+  --fg-faint: #7c8493;
+  --accent: var(--signal-600);
+  --accent-soft: rgba(0, 119, 95, 0.14);
+  --grid-line: rgba(11, 13, 16, 0.045);
+  --shadow-1: 0 1px 2px rgba(20, 23, 28, 0.07);
+  --shadow-2: 0 4px 12px rgba(20, 23, 28, 0.09);
+  --shadow-3: 0 12px 32px rgba(20, 23, 28, 0.12);
+  --shadow-4: 0 28px 64px rgba(20, 23, 28, 0.16);
+  --inset-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Respect reduced-motion: keep state changes, drop travel and parallax. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+    --dur-4: 1ms;
+    --dur-5: 1ms;
+    --dur-6: 1ms;
+    --stagger: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

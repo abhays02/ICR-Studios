@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# NAYEN v1 — third-party weights and generated browser artifacts.
+# The weights are OpenRAIL-licensed and fetched, never vendored:
+#   ./scripts/fetch_indra_models --download --approve-license openrail --web
+# The WASM glue is built from crates/nayen-wasm:
+#   ./scripts/build_wasm
+web/public/models/*.onnx
+web/public/models/meta.json
+web/public/wasm/nayen_wasm.js
+web/public/wasm/nayen_wasm_bg.wasm
+web/public/wasm/*.d.ts

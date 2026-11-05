@@ -1,0 +1,23 @@
+[package]
+name = "nayen-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Native NAYEN v1 driver: ort executor, benchmarks, evaluation and golden cross-checks"
+
+[dependencies]
+nayen-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# load-dynamic: ONNX Runtime is dlopen'd at runtime from ORT_DYLIB_PATH rather
+# than linked in. The pyke prebuilt binaries need glibc 2.38+ and this project
+# builds on older distros; the official Microsoft release tarball works on
+# glibc 2.35 and is what scripts/fetch-ort downloads.
+ort = { version = "2.0.0-rc.10", default-features = false, features = ["load-dynamic"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+
+[lints.rust]
+unsafe_code = "forbid"

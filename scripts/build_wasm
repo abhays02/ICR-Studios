@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Build the browser half of NAYEN v1 into web/public/wasm.
+#
+#   ./scripts/build_wasm            # release-wasm + wasm-bindgen --target web
+#   ./scripts/build_wasm --check    # compile only, do not touch web/public
+#
+# The wasm-bindgen CLI version must match the crate's pinned `=0.2.130` exactly;
+# a mismatch produces glue that silently mis-handles strings. Install with:
+#   cargo install wasm-bindgen-cli --version 0.2.130
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+BINDGEN_VERSION="0.2.130"
+OUT="web/public/wasm"
+CHECK=0
+[[ "${1:-}" == "--check" ]] && CHECK=1
+
+if [[ ! -d "$(rustc --print sysroot)/lib/rustlib/wasm32-unknown-unknown" ]]; then
+  echo "missing target: rustup target add wasm32-unknown-unknown" >&2
+  exit 1
+fi
+
+echo "==> cargo build -p nayen-wasm (release-wasm)"
+cargo build --profile release-wasm --target wasm32-unknown-unknown -p nayen-wasm
+
+WASM="target/wasm32-unknown-unknown/release-wasm/nayen_wasm.wasm"
+[[ -f "$WASM" ]] || { echo "expected $WASM to exist" >&2; exit 1; }
+[[ $CHECK -eq 1 ]] && { echo "ok: $WASM ($(stat -c%s "$WASM") bytes)"; exit 0; }
+
+if ! command -v wasm-bindgen >/dev/null; then
+  echo "wasm-bindgen not on PATH: cargo install wasm-bindgen-cli --version $BINDGEN_VERSION" >&2
+  exit 1
+fi
+have="$(wasm-bindgen --version | awk '{print $2}')"
+if [[ "$have" != "$BINDGEN_VERSION" ]]; then
+  echo "wasm-bindgen $have != crate pin $BINDGEN_VERSION — refuse to emit mismatched glue" >&2
+  exit 1
+fi
+
+echo "==> wasm-bindgen --target web -> $OUT"
+mkdir -p "$OUT"
+wasm-bindgen --target web --out-dir "$OUT" --out-name nayen_wasm "$WASM"
+
+echo "==> models"
+if [[ ! -f web/public/models/meta.json ]]; then
+  echo "    web/public/models is empty — run:"
+  echo "      ./scripts/fetch_indra_models --download --approve-license openrail --web"
+  echo "    Until then the demo falls back to the clearly-labelled SimulatedDriver."
+else
+  du -sh web/public/models | sed 's/^/    /'
+fi
+
+ls -l "$OUT" | sed 's/^/    /'

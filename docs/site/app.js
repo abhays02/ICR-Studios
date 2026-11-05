@@ -1,153 +1,139 @@
-const search = document.querySelector('#search');
-const guides = [...document.querySelectorAll('.guide-links a')];
-search.addEventListener('input', () => {
-  const query = search.value.trim().toLocaleLowerCase();
-  for (const guide of guides) guide.hidden = !guide.dataset.search.toLocaleLowerCase().includes(query);
-  document.querySelector('#no-results').hidden = guides.some((guide) => !guide.hidden);
-});
+/* NAYEN v1 docs — behaviour: theme toggle, offline search, nav filter,
+   TOC scroll-spy, opt-in recording playback. No network calls. */
+'use strict';
 
-const steps = [...document.querySelectorAll('.step')];
-const play = document.querySelector('#play');
-const speed = document.querySelector('#speed');
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const workflow = document.querySelector('.workflow');
-let current = 0;
-let timer;
+/* ------------------------------------------------------------- theme toggle
+   The inline bootstrap in <head> already set data-theme from
+   localStorage > prefers-color-scheme > light. The toggle persists changes. */
+const themeToggle = document.querySelector('#theme-toggle');
+if (themeToggle) {
+  const applyToggleState = () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.setAttribute('aria-pressed', String(dark));
+    themeToggle.querySelector('.toggle-label').textContent = dark ? 'Light' : 'Dark';
+    themeToggle.title = dark ? 'Switch to the light reading theme' : 'Switch to the dark theme';
+  };
+  themeToggle.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('nayen-docs-theme', next); } catch { /* storage blocked */ }
+    applyToggleState();
+  });
+  applyToggleState();
+}
 
-const revealTargets = [...document.querySelectorAll(
-  '.landing .workflow, .principles, .editorial-heading, .role-card, .all-guides .guide-search, .closing-note',
-)];
-if ('IntersectionObserver' in window && !reducedMotion.matches) {
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      entry.target.classList.add('is-visible');
-      observer.unobserve(entry.target);
+/* ---------------------------------------------------------- sidebar filter */
+const filter = document.querySelector('#nav-filter');
+if (filter) {
+  const links = [...document.querySelectorAll('.side-nav a')];
+  const hint = document.querySelector('#nav-filter-hint');
+  const noMatch = document.querySelector('.no-match');
+  const groups = [...document.querySelectorAll('.nav-group')];
+  filter.addEventListener('input', () => {
+    const query = filter.value.trim().toLowerCase();
+    let visible = 0;
+    for (const link of links) {
+      const match = !query || link.dataset.search.includes(query);
+      link.closest('li').hidden = !match;
+      if (match) visible += 1;
     }
-  }, { threshold: 0.08 });
-  for (const target of revealTargets) {
-    target.classList.add('reveal-ready');
-    observer.observe(target);
-  }
-  reducedMotion.addEventListener('change', () => {
-    if (!reducedMotion.matches) return;
-    for (const target of revealTargets) target.classList.add('is-visible');
-    observer.disconnect();
+    for (const group of groups) {
+      group.hidden = ![...group.querySelectorAll('li')].some((li) => !li.hidden);
+    }
+    noMatch.hidden = visible > 0;
+    hint.textContent = query ? `${visible} matching page${visible === 1 ? '' : 's'}` : `${links.length} pages · offline`;
   });
 }
 
-function select(index, announce = true) {
-  current = (index + steps.length) % steps.length;
-  steps.forEach((step, i) => step.setAttribute('aria-pressed', String(i === current)));
-  workflow.dataset.stage = String(Math.min(current, 3));
-  document.querySelector('.scene-stage').textContent = steps[current].querySelector('strong').textContent;
-  document.querySelector('#step-count').textContent = `${current + 1} / ${steps.length}`;
-  if (announce) {
-    const title = steps[current].querySelector('strong').textContent;
-    const detail = steps[current].querySelector('span:last-child').textContent;
-    document.querySelector('#step-detail').textContent = `Step ${current + 1}: ${title}. ${detail}`;
-  }
+/* ------------------------------------------------------------- home search
+   Runs over the generated index embedded in index-data.js — fully offline. */
+const searchInput = document.querySelector('#home-search');
+if (searchInput) {
+  const results = document.querySelector('#search-results');
+  const empty = document.querySelector('#search-empty');
+  const index = window.__NAYEN_DOCS ?? [];
+  const clean = (value) => value.replace(/[<>&"']/g, '');
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+    results.replaceChildren();
+    if (!query) { empty.hidden = true; return; }
+    const hits = [];
+    for (const page of index) {
+      let score = 0;
+      let where = page.title;
+      if (page.title.toLowerCase().includes(query)) score += 6;
+      for (const [text, id] of page.heads) {
+        if (text.toLowerCase().includes(query)) { score += 3; where = text; break; }
+      }
+      if (!score && page.text.includes(query)) {
+        score += 1;
+        const at = page.text.indexOf(query);
+        where = `…${page.text.slice(Math.max(0, at - 40), at + 80)}…`;
+      }
+      if (score) hits.push({ page, score, where });
+    }
+    hits.sort((a, b) => b.score - a.score);
+    empty.hidden = hits.length > 0;
+    for (const { page, where } of hits.slice(0, 12)) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      const headMatch = page.heads.find(([text]) => text.toLowerCase().includes(query));
+      a.href = page.output + (headMatch ? `#${headMatch[1]}` : '');
+      const area = document.createElement('span');
+      area.className = 'r-area';
+      area.textContent = page.area;
+      const strong = document.createElement('strong');
+      strong.textContent = clean(page.title);
+      const small = document.createElement('small');
+      small.textContent = clean(where);
+      a.append(area, strong, small);
+      li.append(a);
+      results.append(li);
+    }
+  });
 }
 
-function pause() {
-  clearInterval(timer);
-  timer = undefined;
-  play.textContent = 'Play workflow';
-  play.setAttribute('aria-pressed', 'false');
-  workflow.classList.remove('playing');
+/* -------------------------------------------------------------- scroll-spy */
+const spyLinks = [...document.querySelectorAll('.toc a[data-spy]')];
+if (spyLinks.length && 'IntersectionObserver' in window) {
+  const headings = spyLinks
+    .map((link) => document.getElementById(link.dataset.spy))
+    .filter(Boolean);
+  const setActive = (id) => {
+    for (const link of spyLinks) {
+      if (link.dataset.spy === id) link.setAttribute('aria-current', 'true');
+      else link.removeAttribute('aria-current');
+    }
+  };
+  const visible = new Set();
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) visible.add(entry.target.id);
+      else visible.delete(entry.target.id);
+    }
+    if (visible.size) {
+      // The topmost visible heading wins; fall back to document order.
+      const first = headings.find((heading) => visible.has(heading.id));
+      if (first) setActive(first.id);
+    }
+  }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+  for (const heading of headings) observer.observe(heading);
+  // Keep the spy truthful on load with a deep link.
+  if (location.hash) setActive(decodeURIComponent(location.hash.slice(1)));
 }
 
-function start() {
-  pause();
-  if (reducedMotion.matches) return;
-  if (current === steps.length - 1) select(0);
-  play.textContent = 'Pause workflow';
-  play.setAttribute('aria-pressed', 'true');
-  workflow.classList.add('playing');
-  timer = setInterval(() => {
-    select(current + 1);
-    if (current === steps.length - 1) pause();
-  }, Number(speed.value));
-}
-
-steps.forEach((step, index) => step.addEventListener('click', () => { pause(); select(index); }));
-steps.forEach((step, index) => step.addEventListener('keydown', (event) => {
-  const offset = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
-  if (offset === undefined && event.key !== 'Home' && event.key !== 'End') return;
-  event.preventDefault();
-  pause();
-  select(event.key === 'Home' ? 0 : event.key === 'End' ? steps.length - 1 : index + offset);
-  steps[current].focus();
-}));
-document.querySelector('#previous').addEventListener('click', () => { pause(); select(current - 1); });
-document.querySelector('#next').addEventListener('click', () => { pause(); select(current + 1); });
-document.querySelector('#reset').addEventListener('click', () => { pause(); select(0); });
-play.addEventListener('click', () => { if (timer) pause(); else start(); });
-speed.addEventListener('change', () => { if (timer) start(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
-
-function applyMotionPreference() {
-  pause();
-  play.disabled = reducedMotion.matches;
-  play.title = reducedMotion.matches ? 'Automatic playback disabled by your reduced-motion preference; use Next or select a step.' : '';
-  if (reducedMotion.matches) document.querySelector('#step-detail').textContent =
-    'Reduced motion is on. Select a stage or use Previous / Next; automatic playback is disabled.';
-}
-reducedMotion.addEventListener('change', applyMotionPreference);
-document.querySelector('.controls').hidden = false;
-applyMotionPreference();
-select(0, false);
-
+/* ------------------------------------------------ recording opt-in playback
+   Studio walkthrough GIFs stay still images until explicitly played. */
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 for (const button of document.querySelectorAll('.recording-toggle')) {
   const image = button.parentElement.querySelector('img');
   const poster = image.getAttribute('src');
-  function stopRecording() {
+  const stopRecording = () => {
     image.setAttribute('src', poster);
     button.setAttribute('aria-pressed', 'false');
     button.textContent = 'Play recorded Studio demo';
-  }
-
-  const spaceContainer = document.querySelector('#space-container');
-  if (spaceContainer) {
-    const consent = document.querySelector('#space-consent');
-    const load = document.querySelector('#load-space');
-    const unload = document.querySelector('#unload-space');
-    const status = document.querySelector('#space-status');
-    function disconnectSpace() {
-      spaceContainer.replaceChildren();
-      load.disabled = !consent.checked;
-      unload.hidden = true;
-      status.textContent = 'Not connected. The external frame is removed; prior provider uploads cannot be undone here.';
-    }
-    load.hidden = false;
-    consent.checked = false;
-    load.disabled = true;
-    consent.addEventListener('change', () => {
-      if (!consent.checked) disconnectSpace();
-      else load.disabled = spaceContainer.childElementCount > 0;
-    });
-    load.addEventListener('click', () => {
-      if (!consent.checked || spaceContainer.childElementCount) return;
-      const frame = document.createElement('iframe');
-      frame.title = 'External LightOnAI LightOnOCR 3 interactive Hugging Face Space';
-      frame.referrerPolicy = 'no-referrer';
-      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
-      frame.src = spaceContainer.dataset.spaceOrigin;
-      spaceContainer.replaceChildren(frame);
-      load.disabled = true;
-      unload.hidden = false;
-      status.textContent = 'External Space requested. Cold starts and queues may take time. If it does not load, open the official Space link above.';
-    });
-    unload.addEventListener('click', () => {
-      consent.checked = false;
-      disconnectSpace();
-      consent.focus();
-    });
-    window.addEventListener('pagehide', () => {
-      consent.checked = false;
-      disconnectSpace();
-    });
-  }
+  };
   button.hidden = false;
   button.addEventListener('click', () => {
     if (button.getAttribute('aria-pressed') === 'true') stopRecording();

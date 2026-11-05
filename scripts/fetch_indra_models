@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Fetch the Indra OCR weights NAYEN v1 runs on.
+
+Immutable revision, explicit opt-in, no code execution: the files are plain
+ONNX graphs plus a JSON metadata blob, fetched over HTTPS from the Hugging Face
+resolve endpoint and written to a gitignored directory.
+
+    ./scripts/fetch_indra_models --download
+    ./scripts/fetch_indra_models --download --web      # also stage web/public/models
+    ./scripts/fetch_indra_models --verify              # offline size/digest check
+
+`--web` copies only the four models the browser pipeline actually requests
+(orient, det, script, rec) plus meta.json. `order.onnx` is not fetched: the
+reading order is computed deterministically in `nayen-core`, so the engine never
+asks for it.
+"""
+import argparse
+import hashlib
+import json
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+REPO = "datalab-to/indra-ocr"
+REVISION = "v1.1.0"
+LICENSE = "openrail"
+BASE = f"https://huggingface.co/{REPO}/resolve/{REVISION}"
+
+# Every file the engine can ask for. Sizes come from the published revision and
+# are what `--verify` checks against; a mismatch means the revision moved.
+FILES = {
+    "meta.json": 211_869,
+    "det.onnx": 389_948,
+    "orient.onnx": 371_802,
+    "script.onnx": 191_630,
+    "rec.onnx": 5_042_161,
+}
+# Multi-script recognizers: optional, fetched only with --all.
+EXTRA_FILES = ["rec_world.onnx", "rec_cjk.onnx", "rec_rtl.onnx"]
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DIR = ROOT / "var" / "models" / "indra-ocr"
+WEB_DIR = ROOT / "web" / "public" / "models"
+MAX_BYTES = 64 * 1024 * 1024
+
+
+def die(message, **extra):
+    print(json.dumps({"status": "error", "reason": message, **extra}))
+    return 1
+
+
+def fetch(url, dest):
+    request = urllib.request.Request(url, headers={"User-Agent": "icr-studios/fetch-indra-models"})
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    with urllib.request.urlopen(request, timeout=120) as response:
+        total = 0
+        with tmp.open("wb") as handle:
+            while True:
+                chunk = response.read(1024 * 256)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_BYTES:
+                    tmp.unlink(missing_ok=True)
+                    raise ValueError(f"{dest.name} exceeded the {MAX_BYTES} byte limit")
+                handle.write(chunk)
+    tmp.replace(dest)
+    return total
+
+
+def digest(path):
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--directory", type=Path, default=DEFAULT_DIR)
+    parser.add_argument("--download", action="store_true",
+                        help="Explicit network/weight download opt-in")
+    parser.add_argument("--all", action="store_true",
+                        help="Also fetch the multi-script recognizers")
+    parser.add_argument("--web", action="store_true",
+                        help="Copy the browser set into web/public/models")
+    parser.add_argument("--approve-license", metavar="ID",
+                        help=f"Exact license identifier, after reading the model card ({LICENSE})")
+    parser.add_argument("--verify", action="store_true", help="Offline size/digest report")
+    args = parser.parse_args()
+
+    wanted = dict(FILES)
+    if args.all:
+        wanted.update({name: None for name in EXTRA_FILES})
+
+    directory = args.directory.resolve()
+
+    if args.verify:
+        entries, missing = [], []
+        for name in wanted:
+            path = directory / name
+            if not path.is_file():
+                missing.append(name)
+                continue
+            size = path.stat().st_size
+            entry = {"file": name, "bytes": size, "sha256": digest(path)}
+            expected = FILES.get(name)
+            if expected is not None:
+                entry["expected_bytes"] = expected
+                entry["ok"] = size == expected
+            entries.append(entry)
+        status = "verified" if not missing and all(e.get("ok", True) for e in entries) else "incomplete"
+        print(json.dumps({"status": status, "repo": REPO, "revision": REVISION,
+                          "license": LICENSE, "directory": str(directory),
+                          "missing": missing, "files": entries}, indent=1))
+        return 0 if status == "verified" else 1
+
+    if not args.download:
+        return die("refusing to touch the network without --download",
+                   hint="re-run with --download --approve-license " + LICENSE)
+
+    if args.approve_license != LICENSE:
+        return die("license not approved",
+                   hint=f"read https://huggingface.co/{REPO} then pass --approve-license {LICENSE}",
+                   license=LICENSE)
+
+    directory.mkdir(parents=True, exist_ok=True)
+    fetched = []
+    for name in wanted:
+        dest = directory / name
+        if dest.is_file() and FILES.get(name) == dest.stat().st_size:
+            fetched.append({"file": name, "bytes": dest.stat().st_size, "cached": True})
+            continue
+        try:
+            size = fetch(f"{BASE}/{name}", dest)
+        except (urllib.error.URLError, ValueError, TimeoutError) as exc:
+            return die("download failed", file=name, detail=str(exc))
+        expected = FILES.get(name)
+        if expected is not None and size != expected:
+            return die("size mismatch against the pinned revision",
+                       file=name, bytes=size, expected_bytes=expected)
+        fetched.append({"file": name, "bytes": size, "sha256": digest(dest)})
+
+    if args.web:
+        WEB_DIR.mkdir(parents=True, exist_ok=True)
+        staged = []
+        for name in list(FILES):
+            source = directory / name
+            if not source.is_file():
+                return die("cannot stage the browser set", missing=name)
+            target = WEB_DIR / name
+            target.write_bytes(source.read_bytes())
+            staged.append(name)
+        print(json.dumps({"status": "staged", "directory": str(WEB_DIR), "files": staged}))
+
+    print(json.dumps({"status": "ok", "repo": REPO, "revision": REVISION, "license": LICENSE,
+                      "directory": str(directory), "files": fetched}, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

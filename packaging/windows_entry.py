@@ -1,4 +1,9 @@
-"""Console entry point for the deliberately CPU/manual-review Windows bundle."""
+"""Console entry point for the deliberately CPU/manual-review Windows bundle.
+
+Branded NAYEN v1 (ICR Studios). Security boundaries below — NTFS-only private
+workspace, reparse/hardlink rejection and real Windows DACLs — are intentional
+and must not be weakened.
+"""
 import argparse
 import base64
 import csv
@@ -106,7 +111,8 @@ def load_secrets(path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="ICR Studio local manual-review preview; no OCR weights")
+    parser = argparse.ArgumentParser(
+        description="NAYEN v1 Studio (ICR Studios) — local manual-review prototype; no OCR weights bundled")
     parser.add_argument("--workspace", type=Path,
                         default=Path(os.environ.get("LOCALAPPDATA", "")) / "ICR-Studio")
     parser.add_argument("--port", type=int, default=8000)
@@ -136,7 +142,9 @@ def main(argv=None):
         "mode": "local", "host": "127.0.0.1", "port": args.port, "data_dir": "var",
         "model_dir": "var/models-not-bundled", "device": "cpu", "cors_origins": [],
     })
-    print(f"Manual-review preview at http://127.0.0.1:{args.port}; OCR is not bundled.")
+    print("NAYEN v1 Studio — ICR Studios manual-review prototype.")
+    print(f"Serving on http://127.0.0.1:{args.port}; no OCR weights are bundled —")
+    print("inference reports failure evidence until you provision approved models.")
     print("Windows decoder: input/pixel caps and wall deadline; no POSIX hard memory/CPU limits.")
     uvicorn.run(create_app(settings=settings), host=settings.host, port=settings.port,
                 access_log=False, log_level="warning", limit_concurrency=32,

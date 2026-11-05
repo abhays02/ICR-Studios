@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = ["crates/nayen-core", "crates/nayen-cli", "crates/nayen-wasm"]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/abhays02/ICR-Studios"
+
+[workspace.dependencies]
+nayen-core = { path = "crates/nayen-core", version = "1.0.0" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Release profile tuned for inference-adjacent numeric code: the pipeline is
+# dominated by resampling and connected-component passes, where debug asserts
+# and overflow checks cost far more than they save.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-wasm]
+inherits = "release"
+# Smaller binary for the browser; "s" trades a little speed for bytes.
+opt-level = "s"
+lto = "fat"
+# Must stay off: `wasm-bindgen` reads the `target_features` custom section to
+# decide which Wasm features the emitted glue may use, and `strip` removes it.
+strip = false
