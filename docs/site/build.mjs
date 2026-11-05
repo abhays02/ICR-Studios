@@ -20,10 +20,19 @@ const root = path.resolve(here, '../..');
 const out = path.join(here, 'dist');
 const project = 'https://github.com/abhays02/ICR-Studios';
 const repository = `${project}/blob/main/`;
-// Live product site (web/, deployed on Vercel) and its demo section.
-// Override with NAYEN_SITE_URL when the deployment address changes.
-const productSite = process.env.NAYEN_SITE_URL || 'https://icr-studios.vercel.app';
-const demoSite = `${productSite}/#demo`;
+// The live product site (web/, deployed on Vercel) and its demo section. Until a
+// deployment exists the docs point at the site's source instead of inventing a
+// hostname that would 404 from a published page. Set NAYEN_SITE_URL to switch.
+const deployed = process.env.NAYEN_SITE_URL || null;
+const siteLinks = deployed
+  ? {
+      product: { href: deployed, label: 'Product site' },
+      demo: { href: `${deployed}/#demo`, label: 'Live demo' },
+    }
+  : {
+      product: { href: `${project}/tree/main/web`, label: 'Site source' },
+      demo: { href: `${project}/blob/main/web/src/demo.ts`, label: 'Demo source' },
+    };
 
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -203,8 +212,8 @@ function header(active) {
 <nav aria-label="Main navigation">
 <a href="index.html#area-sdk"${active === 'sdk' ? ' aria-current="true"' : ''}>SDK</a>
 <a href="index.html#area-studio"${active === 'studio' ? ' aria-current="true"' : ''}>Studio</a>
-<a class="ext" href="${productSite}">Product site <span aria-hidden="true">↗</span></a>
-<a class="ext" href="${demoSite}">Live demo <span aria-hidden="true">↗</span></a>
+<a class="ext" href="${siteLinks.product.href}">${siteLinks.product.label} <span aria-hidden="true">↗</span></a>
+<a class="ext" href="${siteLinks.demo.href}">${siteLinks.demo.label} <span aria-hidden="true">↗</span></a>
 <button id="theme-toggle" type="button" aria-pressed="false"><span class="toggle-label">Dark</span></button>
 <a class="ext github-link" href="${project}">GitHub <span aria-hidden="true">↗</span></a>
 </nav></header>`;
@@ -223,8 +232,8 @@ function sidebar(page) {
 <nav class="side-nav" aria-label="Documentation areas">${group('sdk')}${group('studio')}</nav>
 <p class="no-match" role="status" hidden>No matching pages.</p>
 <div class="side-links">
-<a href="${productSite}">Live product site ↗</a>
-<a href="${demoSite}">Live engine demo ↗</a>
+<a href="${siteLinks.product.href}">${siteLinks.product.label} ↗</a>
+<a href="${siteLinks.demo.href}">${siteLinks.demo.label} ↗</a>
 <a href="${project}/releases">Windows downloads ↗</a>
 </div>
 <p class="sidebar-note">NAYEN v1 · ICR STUDIOS<br>Manual-review prototype. No bundled weights,<br>no validated OCR accuracy claim.</p>
@@ -337,8 +346,8 @@ The <strong>Studio</strong> documents the operator workspace shipped as the Wind
 <div class="home-actions">
 <a class="button button-primary" href="sdk-architecture.html">Read the SDK docs <span aria-hidden="true">→</span></a>
 <a class="button button-secondary" href="studio-guide.html">Open the Studio guide <span aria-hidden="true">→</span></a>
-<a class="button button-secondary ext" href="${productSite}">Live product site <span aria-hidden="true">↗</span></a>
-<a class="button button-secondary ext" href="${demoSite}">Live engine demo <span aria-hidden="true">↗</span></a>
+<a class="button button-secondary ext" href="${siteLinks.product.href}">${siteLinks.product.label} <span aria-hidden="true">↗</span></a>
+<a class="button button-secondary ext" href="${siteLinks.demo.href}">${siteLinks.demo.label} <span aria-hidden="true">↗</span></a>
 </div>
 <p class="status-note"><span class="status-dot" aria-hidden="true"></span>Manual-review prototype · no bundled OCR weights · no validated accuracy claim.
 Missing models produce failure evidence, never invented text.</p>
