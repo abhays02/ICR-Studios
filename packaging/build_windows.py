@@ -9,6 +9,10 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# Brand icon: generated once from packaging/nayen-mark.svg (conversion steps are
+# documented in that file's header). Never commit unverified binary blobs, so
+# the .ico is optional and picked up automatically when present.
+ICON = ROOT / "packaging/nayen.ico"
 
 
 def resource_files():
@@ -44,6 +48,8 @@ def main():
         "--exclude-module", "torch", "--exclude-module", "transformers",
         "--exclude-module", "pytest", "--exclude-module", "tkinter",
     ]
+    if ICON.is_file():
+        command.extend(("--icon", str(ICON)))
     for source, destination in resource_files():
         command.extend(("--add-data", f"{source}{os.pathsep}{destination}"))
     command.append(str(ROOT / "packaging/windows_entry.py"))
@@ -57,7 +63,9 @@ def main():
     for path in files:
         if forbidden.intersection(path.relative_to(bundle).parts) or path.suffix in {".safetensors", ".pt", ".pth"}:
             raise SystemExit("Forbidden workspace, model or secret artifact in bundle")
-    manifest = {"format": 1, "purpose": "Windows local CPU/manual-review preview; no OCR weights",
+    manifest = {"format": 1,
+                "brand": "NAYEN v1 Studio — ICR Studios (Indra perception + Laya decisions)",
+                "purpose": "Windows local CPU/manual-review prototype; unsigned; no OCR weights bundled",
                 "files": {path.relative_to(bundle).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
                           for path in files}}
     (bundle / "bundle-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

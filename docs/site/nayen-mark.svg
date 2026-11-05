@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!--
+    NAYEN v1 mark — "an ink line being read".
+    Handwriting strokes on paper, crossed by the signal-teal scan beam.
+    Palette values come from packages/theme/tokens.css
+    (ink-850 #101317, border-strong #2a2f39, ink-200 #dfe2e7,
+     signal-500 #00a88e, signal-400 #1fc4a8).
+    Windows icon conversion (do once, output is not committed):
+      rsvg-convert -w 256 -h 256 nayen-mark.svg -o nayen-256.png
+      magick nayen-256.png -define icon:auto-resize=256,128,64,48,32,16 nayen.ico
+    build_windows.py uses packaging/nayen.ico automatically when present.
+  -->
+  <rect x="1" y="1" width="46" height="46" rx="9" fill="#101317" stroke="#2a2f39"/>
+  <g fill="#dfe2e7">
+    <rect x="9" y="13" width="21" height="3" rx="1.5"/>
+    <rect x="9" y="22.5" width="30" height="3" rx="1.5"/>
+    <rect x="9" y="32" width="15" height="3" rx="1.5"/>
+  </g>
+  <rect x="33.5" y="7" width="2.5" height="34" rx="1.25" fill="#00a88e"/>
+  <circle cx="34.75" cy="24" r="3.4" fill="none" stroke="#1fc4a8" stroke-width="1.6"/>
+</svg>

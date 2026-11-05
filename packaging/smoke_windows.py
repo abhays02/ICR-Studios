@@ -107,7 +107,7 @@ def main():
                 assert ready["api"] == "ready" and ready["human_review_available"]
                 assert ready["inference"] != "ready"
                 html = request(base, "/").decode()
-                assert "ICR Studio" in html
+                assert "NAYEN v1 Studio" in html
                 assets = re.findall(r'(?:src|href)="(/assets/[^"]+)"', html)
                 assert assets and all(request(base, asset) for asset in assets)
                 request(base, "/api/v1/documents", expected=401)

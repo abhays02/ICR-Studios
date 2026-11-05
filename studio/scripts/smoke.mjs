@@ -36,7 +36,7 @@ try {
   await page.getByText('Edit ROI & recognition type',{exact:true}).click()
   const left=page.getByLabel('Left x',{exact:true})
   const oldLeft=Number(await left.inputValue())
-  const box=await page.locator('svg').evaluate(svg=>{
+  const box=await page.locator('.viewport svg').evaluate(svg=>{
     const rect=svg.querySelector('[aria-label="Full name roi 1"]')
     const p=new DOMPoint(Number(rect.getAttribute('x'))+100,Number(rect.getAttribute('y'))+30).matrixTransform(svg.getScreenCTM())
     return {x:p.x,y:p.y}
@@ -49,7 +49,7 @@ try {
   checks.push('actual pointer drag updates original integer coordinates')
   await page.getByRole('button',{name:'Zoom in',exact:true}).click()
   await page.getByRole('button',{name:'Rotate 0°',exact:true}).click()
-  const corner=await page.locator('svg').evaluate(svg=>{
+  const corner=await page.locator('.viewport svg').evaluate(svg=>{
     const handle=svg.querySelector('[aria-label="Resize Full name roi"]')
     const p=new DOMPoint(Number(handle.getAttribute('x'))+9,Number(handle.getAttribute('y'))+9).matrixTransform(svg.getScreenCTM())
     return {x:p.x,y:p.y}

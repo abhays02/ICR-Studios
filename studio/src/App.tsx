@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {PointerEvent as ReactPointerEvent} from 'react'
-import type {Box, Doc, Evidence, Field, Job, Results, Sample, Template} from './types'
+import type {Box, Doc, Evidence, Field, Job, Profile, Results, Sample, Template} from './types'
+import {DEFAULT_ENGINE_CONFIG, ENGINE_PROFILES, STAGE_ORDER} from './types'
 import {history, moveBox, resizeBox, latestResults, importTemplate} from './geometry'
 import type {History} from './geometry'
 import './App.css'
@@ -16,6 +17,58 @@ function download(data: Blob, name: string) {
 }
 function jsonDownload(value: unknown, name: string) {
   download(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}), name)
+}
+/** NAYEN v1 brand mark — an ink line being read: handwriting strokes on paper,
+    crossed by the signal-teal scan beam. Same motif as web/ and docs/site/. */
+function NayenMark({className='brand-mark'}: {className?: string}) {
+  return <svg className={className} viewBox="0 0 48 48" role="img" aria-label="NAYEN v1">
+    <rect x="1" y="1" width="46" height="46" rx="9" fill="var(--ink-850)" stroke="var(--border-strong)"/>
+    <g fill="var(--ink-200)">
+      <rect x="9" y="13" width="21" height="3" rx="1.5"/>
+      <rect x="9" y="22.5" width="30" height="3" rx="1.5"/>
+      <rect x="9" y="32" width="15" height="3" rx="1.5"/>
+    </g>
+    <rect x="33.5" y="7" width="2.5" height="34" rx="1.25" fill="var(--signal-500)"/>
+    <circle cx="34.75" cy="24" r="3.4" fill="none" stroke="var(--signal-400)" strokeWidth="1.6"/>
+  </svg>
+}
+/** One stored inference attempt from evidence provenance (backend-recorded). */
+type AttemptRecord = {seconds?: number; outcome?: string}
+/** Honest NAYEN v1 adapter readout: selected profile, real per-stage timing
+    evidence when the backend reports it, models actually used, and an
+    explicit engine-not-loaded state. Never fabricates timings or output. */
+function EngineStrip({health, results}: {health: Record<string,unknown>|null; results: Results|null}) {
+  const [profile,setProfile]=useState<Profile>(DEFAULT_ENGINE_CONFIG.profile)
+  const inference=String(health?.inference??'checking')
+  const loaded=inference==='loaded'||inference==='ready'
+  const fields=results?Object.values(results.fields):[]
+  const modelsUsed=[...new Set(fields.map(f=>f.model_used).filter((m): m is string=>!!m))]
+  const attempts=fields.flatMap(f=>((f.provenance?.attempts ?? []) as AttemptRecord[]))
+  const recognitionSeconds=attempts.reduce((sum,a)=>sum+(a.seconds??0),0)
+  const timings: Partial<Record<(typeof STAGE_ORDER)[number], string>> = attempts.length
+    ? {recognize: `${recognitionSeconds.toFixed(2)}s`, total: `${recognitionSeconds.toFixed(2)}s`}
+    : {}
+  return <div className="engine-strip" aria-label="NAYEN v1 engine status">
+    <div className="engine-strip-head">
+      <span className={'engine-state '+(loaded?'loaded':'')} aria-live="polite">
+        {loaded?`ENGINE LOADED · ${inference}`:`ENGINE NOT LOADED · ${inference}`}
+      </span>
+      <span className="profile-switch" role="group" aria-label="NAYEN v1 adapter profile">
+        {ENGINE_PROFILES.map(p=><button key={p} type="button" aria-pressed={profile===p} onClick={()=>setProfile(p)}>{p}</button>)}
+      </span>
+    </div>
+    <dl className="stage-grid">
+      {STAGE_ORDER.map(stage=><div key={stage}><dt>{stage}</dt><dd>{timings[stage]??'—'}</dd></div>)}
+    </dl>
+    <div className="provenance-strip"><span>MODELS USED</span>
+      {modelsUsed.length
+        ? modelsUsed.map(m=><code key={m}>{m}</code>)
+        : <code className="none">none — engine not loaded; jobs fail honestly, never invent text</code>}
+    </div>
+    <p className="caption">Profile “{profile}” previews the NAYEN v1 adapter seam (Indra perception → Laya decision).
+      The local backend currently routes through the handwriting adapter; stages it does not report stay “—”.
+      Timings shown are real attempt seconds from stored provenance, not estimates.</p>
+  </div>
 }
 function ImageAsset({path, token, alt, className}: {path: string; token: string; alt: string; className?: string}) {
   const [asset,setAsset] = useState({path:'',url:''})
@@ -227,21 +280,24 @@ type SettingsData={revision:number;values:Record<string,unknown>;sources:Record<
 type SchemaData={schema:{properties:Record<string,{type?:string;enum?:unknown[];description?:string;minimum?:number;maximum?:number}>};runtime_keys:string[];help:unknown}
 function ModelCatalog() {
   return <section className="model-catalog" aria-labelledby="catalog-title">
-    <div className="section-heading"><div><span className="eyebrow">LOCAL MODEL HARNESS / CATALOG</span><h2 id="catalog-title">Adapters, not promises.</h2></div><span className="badge">OFFLINE ONLY</span></div>
-    <p>Implementation status is separate from artifact availability. This catalog does not install, download, run or benchmark models.</p>
+    <div className="section-heading"><div><span className="eyebrow">NAYEN v1 ENGINE / ADAPTER REGISTRY</span><h2 id="catalog-title">Adapters, not promises.</h2></div><span className="badge">OFFLINE ONLY</span></div>
+    <p>NAYEN v1 splits the pipeline into <strong>Indra</strong> (perception: orient → detect → crop → recognize)
+      and <strong>Laya</strong> (decision: fields, cross-checks, anomalies) behind one pluggable adapter seam.
+      Implementation status is separate from artifact availability. This registry does not install, download, run or benchmark models.</p>
     <div className="model-grid">
-      <article className="model-card implemented"><span className="model-index">01 / IMPLEMENTED ADAPTER</span><h3>TrOCR</h3>
-        <code>microsoft/trocr-base-handwritten</code><p>The only implemented inference adapter. Approved local weights are required; missing weights fail explicitly.</p>
+      <article className="model-card implemented"><span className="model-index">PROFILE / HANDWRITING</span><h3>TrOCR adapter</h3>
+        <code>microsoft/trocr-base-handwritten</code><p>The only implemented local inference adapter, exposed through the NAYEN v1 seam as the <code>handwriting</code> profile. Approved local weights are required; missing weights fail explicitly and never invent text.</p>
         <span className="model-status">Readiness: see live API report below</span></article>
-      <article className="model-card"><span className="model-index">02 / REQUESTED CANDIDATE</span><h3>LightOnOCR 3</h3>
-        <code>lightonai/LightOnOCR-3-0.8B<br/>lightonai/LightOnOCR-3-1B<br/>lightonai/LightOnOCR-3-4B</code>
-        <p>Official upstream identities confirmed. Upstream documents local vLLM OpenAI-compatible calls and grounding coordinates normalized to 0–1000.</p>
-        <span className="badge">NOT INTEGRATED</span><p>No adapter or tested weights here. This Studio blocks vLLM; no HF Space inference endpoint has been verified.</p>
+      <article className="model-card engine"><span className="model-index">PROFILES / INDRA · SWEEP</span><h3>NAYEN Rust engine</h3>
+        <code>nayen-core + nayen-wasm<br/>orient · det · script · rec · order</code>
+        <p>Native Rust perception (Indra) and decision (Laya) stages with per-stage timings, script routing and full <code>PageResult</code> provenance. Under active development; this Studio build ships it <strong>not loaded</strong> — jobs report failure evidence instead of predictions.</p>
+        <span className="badge">ENGINE NOT LOADED</span>
+        <span className="model-status">Contract mirrored in Studio types / runtime pending</span></article>
+      <article className="model-card"><span className="model-index">REQUESTED CANDIDATES</span><h3>LightOnOCR 3 · Xiaomi OCR 0</h3>
+        <code>lightonai/LightOnOCR-3-0.8B|1B|4B<br/>SeerRay-Lab/Xiaomi-OCR-0</code>
+        <p>Upstream identities confirmed; no adapter is implemented and no inference endpoint is configured or guessed. This Studio blocks vLLM and remote fallback, so these candidates never change job routing.</p>
+        <span className="badge">NOT INTEGRATED</span>
         <span className="model-status">Identity known / adapter pending</span></article>
-      <article className="model-card"><span className="model-index">03 / REQUESTED CANDIDATE</span><h3>Xiaomi OCR 0</h3>
-        <code>SeerRay-Lab/Xiaomi-OCR-0</code><p>Upstream identity confirmed: 0.8B, derived from Qwen3.5. No local adapter is implemented. Runtime compatibility remains unverified.</p>
-        <span className="badge">NOT INTEGRATED</span><p>The upstream Space is a project page and assets, not a verified inference endpoint. No inference URL is configured or guessed.</p>
-        <span className="model-status">Identity known / inference unavailable here</span></article>
     </div>
     <p className="caption">No measured comparison or accuracy claim is available. Candidate entries do not change job routing. No cloud requests or remote fallback.</p>
   </section>
@@ -439,9 +495,9 @@ export default function App() {
   }
   return <div className="app">
     <a className="skip" href="#main">Skip to workspace</a>
-    <header><div className="brand"><span className="brand-icon">▧</span><div><strong>ICR <span>STUDIO</span></strong><small>LOCAL DOCUMENT WORKSPACE</small></div></div>
+    <header><div className="brand"><NayenMark/><div><strong>NAYEN <span>STUDIO</span></strong><small>ICR STUDIOS · LOCAL DOCUMENT WORKSPACE</small></div></div>
       <div className="header-meta"><span className="privacy">● Local only</span><span>Human review required</span>
-        <span className="readiness">Inference: {String(health?.inference??'checking')}</span></div>
+        <span className={'readiness'+(String(health?.inference??'')!=='loaded'&&String(health?.inference??'')!=='ready'?' engine-down':'')}>Inference: {String(health?.inference??'checking')}</span></div>
       {connected&&<button onClick={logout}>Lock workspace</button>}
     </header>
     {!connected?<main className="login" id="main">
@@ -523,9 +579,10 @@ export default function App() {
               {doc&&<span className={'badge '+(results?.review_state==='reviewed'?'reviewed':'')}>{results?.review_state==='reviewed'?'HUMAN REVIEWED':'DRAFT UNTIL REVIEWED'}</span>}
             </div>
             {doc&&template&&image&&template.width_px===doc.width_px&&template.height_px===doc.height_px?<Canvas key={doc.id} template={template} image={image} selected={selected} select={setSelected} change={change} evidence={results?.fields||{}}/>:
-              <div className="empty"><div className="empty-coordinate" aria-hidden="true">[ x₀, y₀, x₁, y₁ )</div><span aria-hidden="true">▧</span><span className="eyebrow">AWAITING DOCUMENT</span><h2>A clear view of every field.</h2><p>Full-resolution evidence, editable ROIs,<br/>and an honest trail from model to review.</p><button className="primary" onClick={()=>setTab('gallery')}>Open synthetic gallery →</button><small>Or upload a scan from the document panel.</small></div>}
+              <div className="empty"><div className="empty-coordinate" aria-hidden="true">[ x₀, y₀, x₁, y₁ )</div><span aria-hidden="true" className="empty-glyph"><NayenMark className="empty-brand"/></span><span className="eyebrow">AWAITING DOCUMENT</span><h2>A clear view of every field.</h2><p>Full-resolution evidence, editable ROIs,<br/>and an honest trail from model to review.</p><button className="primary" onClick={()=>setTab('gallery')}>Open synthetic gallery →</button><small>Or upload a scan from the document panel.</small></div>}
             {doc&&template&&(template.template_id!==doc.template_id||template.template_version!==doc.template_version||hist!.past.length>0)&&<p className="caption">Editor preview only. OCR and evidence still use document snapshot {doc.template_id} / {doc.template_version}. Re-upload with a saved version to apply.</p>}
             {doc&&<section className="job-panel"><div className="section-heading"><h2>Recognition queue</h2><span>{job?.state||'Not submitted'}</span></div>
+              <EngineStrip health={health} results={results}/>
               <label><input type="checkbox" checked={aligned} onChange={e=>setAligned(e.target.checked)}/> I checked original upright alignment against this document's immutable template.</label>
               <div className="inline"><button className="primary" disabled={!aligned||busy||!!job&&!terminal.has(job.state)} onClick={()=>run(async()=>{
                 const j=await api<{id:string}>(`/documents/${doc.id}/jobs`,{method:'POST',body:JSON.stringify({idempotency_key:crypto.randomUUID(),alignment_confirmed:true,remote_consent:false})})
@@ -536,7 +593,7 @@ export default function App() {
               </div>
               {job&&<><p>{job.progress.done} / {job.progress.total} fields processed · {events} actual SSE events received</p><progress max={job.progress.total||1} value={job.progress.done} aria-label="Actual OCR field progress"/>
                 {job.error&&<pre className="error">{JSON.stringify(job.error,null,2)}</pre>}</>}
-              <p className="caption">Only local TrOCR adapter. Missing weights fail honestly. No automated tiling, deskew, external fallback or model-derived confidence.</p>
+              <p className="caption">Local adapters only, behind the NAYEN v1 seam. Missing weights or an unloaded engine fail honestly — no invented text, no automated tiling or deskew, no external fallback, no model-derived confidence.</p>
             </section>}
           </section>
           <aside className="review-panel"><span className="eyebrow">FIELD INSPECTOR</span><h2>Review, don't assume.</h2>
@@ -590,6 +647,6 @@ export default function App() {
         <h3>Model, attempts, timing & provenance</h3><pre>{JSON.stringify(evidence,null,2)}</pre>
       </section></div>}
     </>}
-    <footer><span>ICR BANK / STUDIO</span><span>No accuracy claim · no automatic approval · no regulatory certification</span><span>API {String(health?.api??'checking')}</span></footer>
+    <footer><span>NAYEN v1 · ICR STUDIOS</span><span>No accuracy claim · no automatic approval · no regulatory certification</span><span>API {String(health?.api??'checking')}</span></footer>
   </div>
 }

@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Fetch the prebuilt ONNX Runtime shared library that `nayen-cli` dlopens.
+#
+# `ort` is built with `load-dynamic` on purpose: its own `download-binaries`
+# feature ships a runtime linked against glibc 2.38+, which will not load on
+# Ubuntu 22.04 (2.35) or the Debian 12 container the Windows build runs in.
+# Microsoft's official release tarballs are built for far older baselines.
+#
+#   ./scripts/fetch_ort                    # linux-x64 1.20.1 -> var/onnxruntime
+#   ./scripts/fetch_ort --target win-x64   # for packaging/build_windows.py
+#
+# Point the CLI at the result with ORT_DYLIB_PATH, or just leave it in
+# var/onnxruntime where `nayen-cli` looks first.
+set -euo pipefail
+
+VERSION="1.20.1"
+TARGET="linux-x64"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/var/onnxruntime"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --target) TARGET="$2"; shift 2 ;;
+    --version) VERSION="$2"; shift 2 ;;
+    --directory) DIRECTORY="$2"; shift 2 ;;
+    -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
+case "$TARGET" in
+  linux-x64|linux-aarch64|win-x64|osx-x86_64|osx-arm64) ;;
+  *) echo "unsupported target: $TARGET (linux-x64|linux-aarch64|win-x64|osx-x86_64|osx-arm64)" >&2; exit 2 ;;
+esac
+
+ARCHIVE="onnxruntime-${TARGET}-${VERSION}"
+URL="https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/${ARCHIVE}.tgz"
+
+mkdir -p "$DIRECTORY"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+echo "fetching $URL"
+curl -fsSL --retry 3 -o "$TMP/ort.tgz" "$URL"
+tar -xzf "$TMP/ort.tgz" -C "$TMP"
+
+LIBDIR="$TMP/$ARCHIVE/lib"
+[[ -d "$LIBDIR" ]] || LIBDIR="$TMP/$ARCHIVE/lib64"
+if [[ ! -d "$LIBDIR" ]]; then
+  echo "no lib/ in the archive — layout changed, inspect $ARCHIVE manually" >&2
+  exit 1
+fi
+
+shopt -s nullglob
+copied=()
+for f in "$LIBDIR"/*; do
+  base="$(basename "$f")"
+  case "$base" in
+    libonnxruntime*|onnxruntime.dll|onnxruntime.pdb|onnxruntime.providers*)
+      cp -a "$f" "$DIRECTORY/$base"
+      copied+=("$base")
+      ;;
+  esac
+done
+shopt -u nullglob
+
+if [[ ${#copied[@]} -eq 0 ]]; then
+  echo "found no runtime libraries in $LIBDIR" >&2
+  exit 1
+fi
+
+# Windows also needs the DLL next to the .exe; packaging/build_windows.py reads
+# this manifest rather than hard-coding a filename.
+python3 - "$DIRECTORY" "$TARGET" "$VERSION" "${copied[@]}" <<'PY'
+import json, sys
+directory, target, version = sys.argv[1:4]
+files = sys.argv[4:]
+with open(f"{directory}/manifest.json", "w") as handle:
+    json.dump({"target": target, "version": version, "files": files}, handle, indent=1)
+    handle.write("\n")
+PY
+
+printf '%s\n' "${copied[@]/#/$DIRECTORY\/}"
+echo "export ORT_DYLIB_PATH=$DIRECTORY/$( [[ $TARGET == win-* ]] && echo onnxruntime.dll || echo libonnxruntime.so )"

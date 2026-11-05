@@ -1,0 +1,19 @@
+[package]
+name = "nayen-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "wasm-bindgen facade over nayen-core for browser inference via onnxruntime-web"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+nayen-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+wasm-bindgen = "=0.2.130"
+
+[lints.rust]
+unsafe_code = "forbid"

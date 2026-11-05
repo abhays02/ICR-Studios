@@ -1,0 +1,27 @@
+{
+  "name": "@icr-studios/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NAYEN v1 — immersive public frontend for the ICR Studios browser-native ICR engine",
+  "scripts": {
+    "predev": "node scripts/sync-vendor.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/sync-vendor.mjs",
+    "build": "vite build",
+    "check:contract": "node scripts/sync-vendor.mjs --check",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src vite.config.ts"
+  },
+  "dependencies": {
+    "onnxruntime-web": "^1.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "typescript": "~5.8.0",
+    "typescript-eslint": "^8.13.0",
+    "vite": "^6.0.0"
+  }
+}

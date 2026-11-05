@@ -10,6 +10,7 @@ if not exist "%LOCALAPPDATA%\ICR-Studio\var\windows-secrets.json" (
   ICR-Studio.exe init-secrets
   if errorlevel 1 goto failed
 )
+echo NAYEN v1 Studio - ICR Studios manual-review prototype. Unsigned; no OCR weights bundled.
 echo Open http://127.0.0.1:8000 after the server starts.
 echo Unlock with only the operator token from the private windows-secrets.json.
 echo See README.txt for its location and instructions. Keep this window open.

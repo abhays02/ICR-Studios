@@ -1,0 +1,18 @@
+[package]
+name = "nayen-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "NAYEN v1 - executor-agnostic ICR perception and decision engine (Indra + Laya), native and WASM"
+readme = "README.md"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[features]
+default = []
+
+[lints.rust]
+unsafe_code = "forbid"

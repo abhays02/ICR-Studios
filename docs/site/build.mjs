@@ -1,16 +1,39 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+/**
+ * NAYEN v1 documentation site generator (GitHub Pages).
+ *
+ * Publishes exactly two documentation areas — SDK (the NAYEN v1 engine) and
+ * Studio (the operator workspace). Marketing/landing content intentionally
+ * lives elsewhere (the Vercel product site in web/); this surface is docs only.
+ *
+ * Design tokens are consumed from packages/theme/tokens.css (copied into the
+ * output, never re-declared here). Build must keep working under:
+ *   npm ci --ignore-scripts && npm run build   →   docs/site/dist
+ */
+import { createHash } from 'node:crypto';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
-import { workflows } from './workflows.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const out = path.join(here, 'dist');
 const project = 'https://github.com/abhays02/ICR-Studios';
 const repository = `${project}/blob/main/`;
-const lightOnSpace = 'https://huggingface.co/spaces/lightonai/LightOnOCR-3-Demo';
-const lightOnEmbed = 'https://lightonai-lightonocr-3-demo.hf.space';
+// The live product site (web/, deployed on Vercel) and its demo section. Until a
+// deployment exists the docs point at the site's source instead of inventing a
+// hostname that would 404 from a published page. Set NAYEN_SITE_URL to switch.
+const deployed = process.env.NAYEN_SITE_URL || null;
+const siteLinks = deployed
+  ? {
+      product: { href: deployed, label: 'Product site' },
+      demo: { href: `${deployed}/#demo`, label: 'Live demo' },
+    }
+  : {
+      product: { href: `${project}/tree/main/web`, label: 'Site source' },
+      demo: { href: `${project}/blob/main/web/src/demo.ts`, label: 'Demo source' },
+    };
+
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[char]));
@@ -19,37 +42,139 @@ const inlineText = (tokens) => tokens.map((token) => token.type === 'html' ? ''
 const slug = (value) => value.toLowerCase()
   .replace(/[^\p{L}\p{N}_\s-]/gu, '').trim().replace(/\s/g, '-');
 
-async function discover(directory) {
-  const files = [];
-  for (const entry of await readdir(path.join(root, directory), { withFileTypes: true })) {
-    if (['site', 'media'].includes(entry.name)) continue;
-    const name = path.posix.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await discover(name));
-    else if (entry.name.endsWith('.md')) files.push(name);
+/* ------------------------------------------------------------------ registry
+   The complete published surface. Anything not listed here is not published
+   from Pages (it stays in the repo; links resolve to GitHub instead). */
+const REGISTRY = [
+  { area: 'sdk', source: 'docs/site/content/sdk/architecture.md', output: 'sdk-architecture.html', label: 'Architecture' },
+  { area: 'sdk', source: 'docs/site/content/sdk/host-protocol.md', output: 'sdk-host-protocol.html', label: 'Host protocol & executor seam' },
+  { area: 'sdk', source: 'docs/site/content/sdk/rust-api.md', output: 'sdk-rust-api.html', label: 'Rust crate API' },
+  { area: 'sdk', source: 'docs/site/content/sdk/wasm.md', output: 'sdk-wasm.html', label: 'WASM integration' },
+  { area: 'sdk', source: 'docs/site/content/sdk/profiles.md', output: 'sdk-profiles.html', label: 'Profiles & parameters' },
+  { area: 'sdk', source: 'docs/MODELS.md', output: 'sdk-provenance.html', label: 'Model provenance & licensing' },
+  { area: 'studio', source: 'docs/STUDIO.md', output: 'studio-guide.html', label: 'Operator guide' },
+  { area: 'studio', source: 'docs/API.md', output: 'studio-api.html', label: 'Studio API contract' },
+  { area: 'studio', source: 'docs/site/content/studio/windows.md', output: 'studio-windows.html', label: 'Windows build & run' },
+  { area: 'studio', source: 'data/samples/README.md', output: 'studio-fixtures.html', label: 'Synthetic fixtures' },
+  { area: 'studio', source: 'studio/README.md', output: 'studio-development.html', label: 'Studio development' },
+];
+const AREAS = {
+  sdk: { name: 'SDK', blurb: 'The NAYEN v1 engine: Indra perception, Laya decisions, the executor seam, WASM host loop, profiles and model provenance.' },
+  studio: { name: 'Studio', blurb: 'The operator workspace: unlock, import, inspect, correct, approve, export — and the Windows package.' },
+};
+
+/* ------------------------------------------------------- contract excerpts
+   %%include <repo-file>#<Symbol>%% pulls the real definition from source at
+   build time so SDK pages cannot drift from engine/src/types.ts. */
+function extractSymbol(file, symbol) {
+  const lines = file.split('\n');
+  const start = lines.findIndex((line) =>
+    new RegExp(`^export (interface|type|const) ${symbol}\\b`).test(line));
+  if (start < 0) throw new Error(`Contract symbol not found: ${symbol}`);
+  let begin = start;
+  while (begin > 0 && /^\s*(\/\*\*|\*|\/\/)/.test(lines[begin - 1])) begin -= 1;
+  let depth = 0;
+  let end = start;
+  for (; end < lines.length; end += 1) {
+    for (const char of lines[end]) {
+      if ('{[('.includes(char)) depth += 1;
+      if ('}])'.includes(char)) depth -= 1;
+    }
+    if (end > start && depth <= 0) break;
+    if (end === start && depth === 0 && lines[end].trimEnd().endsWith(';')) break;
   }
-  return files.sort();
+  return lines.slice(begin, end + 1).join('\n');
 }
 
-const sources = ['README.md', ...await discover('docs'), 'SECURITY.md',
-  'data/samples/README.md', 'studio/README.md'];
-const pages = await Promise.all(sources.map(async (source, index) => {
-  const markdown = await readFile(path.join(root, source), 'utf8');
-  return {
-    source, markdown,
-    output: index === 0 ? 'overview.html' : `${source.replace(/\.md$/, '').replaceAll('/', '-')}.html`,
-    title: markdown.match(/^#\s+(.+)$/m)?.[1] ?? source,
-  };
-}));
-const bySource = new Map(pages.map((page) => [page.source, page]));
+async function applyIncludes(markdown) {
+  const cache = new Map();
+  const parts = markdown.split('\n');
+  for (let index = 0; index < parts.length; index += 1) {
+    const match = parts[index].match(/^%%include\s+(\S+)#(\w+)%%$/);
+    if (!match) continue;
+    const [, file, symbol] = match;
+    if (!cache.has(file)) cache.set(file, await readFile(path.join(root, file), 'utf8'));
+    parts[index] = `\`\`\`ts\n${extractSymbol(cache.get(file), symbol)}\n\`\`\``;
+  }
+  return parts.join('\n');
+}
+
+/* ------------------------------------------------------------- highlighting
+   Small hand-rolled tokenizer — no runtime dependency, deterministic output. */
+const KEYWORDS = {
+  ts: ['as','async','await','boolean','break','case','catch','class','const','continue','default','do','else','enum','export','extends','false','for','from','function','get','if','implements','import','in','instanceof','interface','keyof','let','new','null','number','of','private','public','readonly','return','satisfies','set','static','string','super','switch','this','throw','true','try','type','typeof','undefined','unique','unknown','var','void','while','yield'],
+  rust: ['as','async','await','bool','break','const','continue','crate','dyn','else','enum','false','fn','for','f32','f64','i64','i32','u8','u32','usize','if','impl','in','let','loop','match','mod','move','mut','pub','ref','return','self','Self','static','str','struct','super','trait','true','type','unsafe','use','where','while'],
+  py: ['and','as','assert','async','await','break','class','continue','def','del','elif','else','except','False','finally','for','from','global','if','import','in','is','lambda','None','nonlocal','not','or','pass','raise','return','True','try','while','with','yield'],
+  sh: ['cd','echo','exec','exit','export','if','then','fi','for','in','npm','npx','node','python','python3','set','uv','git','curl','magick','rsvg-convert'],
+  bash: [],
+  json: ['true','false','null'],
+  yaml: ['true','false','null','on','off'],
+  toml: ['true','false'],
+};
+function highlight(code, rawLang) {
+  const lang = String(rawLang || '').toLowerCase();
+  const keywords = KEYWORDS[lang] ?? KEYWORDS[lang === 'typescript' ? 'ts' : lang === 'python' ? 'py' : lang === 'shell' ? 'sh' : ''] ?? [];
+  const hashComments = ['py', 'python', 'sh', 'bash', 'shell', 'yaml', 'toml'].includes(lang);
+  const slashComments = !hashComments && lang !== 'json';
+  const patterns = [];
+  patterns.push(/\/\*[\s\S]*?\*\/(?:\/)?/);            // block comments
+  if (slashComments) patterns.push(/\/\/[^\n]*/);
+  if (hashComments) patterns.push(/#[^\n]*/);
+  patterns.push(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\[\s\S])*`/); // strings
+  patterns.push(/\b0[xX][\da-fA-F_]+\b|\b\d[\d_]*(?:\.\d+)?\b/);                   // numbers
+  if (keywords.length) patterns.push(new RegExp(`\\b(?:${keywords.join('|')})\\b`));
+  patterns.push(/\b[A-Z][A-Za-z0-9_]*\b/);              // type-like identifiers
+  const combined = new RegExp(`(${patterns.map((p) => p.source).join(')|(')})`, 'g');
+  const classes = ['hl-c'];                               // block comment
+  if (slashComments) classes.push('hl-c');
+  if (hashComments) classes.push('hl-c');
+  classes.push('hl-s', 'hl-n');
+  if (keywords.length) classes.push('hl-k');
+  classes.push('hl-t');
+  let html = '';
+  let cursor = 0;
+  for (const match of code.matchAll(combined)) {
+    html += escape(code.slice(cursor, match.index));
+    const groupIndex = match.slice(1).findIndex((part) => part !== undefined);
+    const cls = classes[groupIndex] ?? 'hl-t';
+    html += `<span class="${cls}">${escape(match[0])}</span>`;
+    cursor = match.index + match[0].length;
+  }
+  return html + escape(code.slice(cursor));
+}
+
+/* -------------------------------------------------------------------- pages */
 const localLinks = [];
 const pageHeadings = new Map();
+const bySource = new Map();
+const pages = await Promise.all(REGISTRY.map(async (entry) => {
+  const raw = await readFile(path.join(root, entry.source), 'utf8');
+  const markdown = await applyIncludes(raw);
+  const title = markdown.match(/^#\s+(.+)$/m)?.[1]?.replace(/[`*]/g, '') ?? entry.label;
+  const excerpt = (markdown.replace(/^#\s+.+$/m, '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.replace(/^\s*>/gm, ' ')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`#|]/g, ' ')
+      .replace(/\s+/g, ' ').trim())
+    .find((paragraph) => paragraph.length >= 80) ?? '').slice(0, 200);
+  const page = { ...entry, markdown, title, excerpt, headings: [] };
+  bySource.set(entry.source, page);
+  return page;
+}));
+// Repo sources that are published under a different area also resolve.
+const outputs = new Map(pages.map((page) => [page.output, page]));
 
 function resolveURL(href, page, image = false) {
-  if (/^(https?:|mailto:)/i.test(href)) return image ? '' : href.replace('github.com/abhays02/ICR-bank', 'github.com/abhays02/ICR-Studios');
+  if (/^(https?:|mailto:)/i.test(href)) return image ? '' : href;
   if (/^[a-z][a-z\d+.-]*:|^[/\\]{2}/i.test(href)) return '';
   const match = href.match(/^([^?#]*)([?#].*)?$/);
   const pathname = decodeURIComponent(match[1]);
   const suffix = match[2] ?? '';
+  if (pathname.endsWith('.html')) {
+    if (outputs.has(path.posix.basename(pathname))) return path.posix.basename(pathname) + suffix;
+    return image ? '' : href;
+  }
   const source = pathname ? path.posix.normalize(pathname.startsWith('/') ? pathname.slice(1)
     : path.posix.join(path.posix.dirname(page.source), pathname)) : page.source;
   if (bySource.has(source)) {
@@ -57,125 +182,91 @@ function resolveURL(href, page, image = false) {
     return bySource.get(source).output + suffix;
   }
   if (source.startsWith('docs/media/')) return `media/${path.posix.basename(source)}${suffix}`;
-  if (source.startsWith('../') || source.startsWith('/') || source.includes('\\')) return '';
+  if (image) return '';
   return repository + source.split('/').map(encodeURIComponent).join('/') + suffix;
 }
 
-function head(title, description, externalDemo = false) {
+/* ------------------------------------------------------------------ chrome */
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('nayen-docs-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+const themeHash = `'sha256-${createHash('sha256').update(THEME_SCRIPT).digest('base64')}'`;
+
+const BRAND_SVG = `<svg class="brand-svg" viewBox="0 0 48 48" aria-hidden="true"><rect x="1" y="1" width="46" height="46" rx="9" fill="var(--ink-850)" stroke="var(--border-strong)"/><g fill="var(--ink-200)"><rect x="9" y="13" width="21" height="3" rx="1.5"/><rect x="9" y="22.5" width="30" height="3" rx="1.5"/><rect x="9" y="32" width="15" height="3" rx="1.5"/></g><rect x="33.5" y="7" width="2.5" height="34" rx="1.25" fill="var(--signal-500)"/><circle cx="34.75" cy="24" r="3.4" fill="none" stroke="var(--signal-400)" stroke-width="1.6"/></svg>`;
+
+function head(title, description) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; frame-src ${externalDemo ? lightOnEmbed : "'none'"}; base-uri 'none'; form-action 'none'; object-src 'none'">
+<script>${THEME_SCRIPT}</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' ${themeHash}; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="description" content="${escape(description)}">
-<meta name="theme-color" content="#0a0c0d"><title>${escape(title)} · ICR Studios</title>
-<link rel="icon" type="image/svg+xml" href="media/icr-mark.svg"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>`;
+<meta name="theme-color" content="#0b0d10">
+<title>${escape(title)} · NAYEN v1 docs</title>
+<link rel="icon" type="image/svg+xml" href="nayen-mark.svg">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="styles.css">
+<script src="index-data.js" defer></script><script src="app.js" defer></script></head>`;
 }
 
-function header() {
-  return `<a class="skip" href="#content">Skip to content</a><header class="site-header">
-<a class="brand" href="index.html" aria-label="ICR Studios home"><span class="brand-mark" aria-hidden="true"></span>ICR<span class="brand-light">STUDIOS</span><span class="brand-docs">/ FIELD NOTES</span></a>
-<nav aria-label="Main navigation"><a href="index.html#live-demo">Live OCR</a><a href="index.html#guides">Guides</a><a href="${project}/releases">Releases ↗</a><a class="github-link" href="${project}">GitHub ↗</a></nav></header>`;
+function header(active) {
+  return `<a class="skip" href="#content">Skip to content</a>
+<header class="site-header">
+<a class="brand" href="index.html" aria-label="NAYEN v1 documentation home">${BRAND_SVG}<span class="brand-name">NAYEN<span class="brand-v">v1</span></span><span class="brand-docs">SDK &amp; STUDIO DOCS</span></a>
+<nav aria-label="Main navigation">
+<a href="index.html#area-sdk"${active === 'sdk' ? ' aria-current="true"' : ''}>SDK</a>
+<a href="index.html#area-studio"${active === 'studio' ? ' aria-current="true"' : ''}>Studio</a>
+<a class="ext" href="${siteLinks.product.href}">${siteLinks.product.label} <span aria-hidden="true">↗</span></a>
+<a class="ext" href="${siteLinks.demo.href}">${siteLinks.demo.label} <span aria-hidden="true">↗</span></a>
+<button id="theme-toggle" type="button" aria-pressed="false"><span class="toggle-label">Dark</span></button>
+<a class="ext github-link" href="${project}">GitHub <span aria-hidden="true">↗</span></a>
+</nav></header>`;
 }
 
-function scene(workflow) {
-  return `<figure class="scanner-scene" aria-labelledby="scene-caption">
-<div class="scene-topline"><span><i class="status-dot"></i>DOCUMENT VIEWPORT</span><span>001 / SYNTHETIC STUDY</span></div>
-<div class="scene-world" aria-hidden="true"><div class="viewfinder"></div><div class="scene-coordinate">X 0240<br>Y 0180<br><span>1:1 / SOURCE</span></div>
-<div class="scanner"><div class="scanner-base"></div><div class="scanner-bed"></div><div class="scanner-rail rail-left"></div><div class="scanner-rail rail-right"></div>
-<div class="paper paper-under"></div><div class="paper document"><div class="paper-top"><b>ICR</b><span>SYNTHETIC FORM<br>REVIEW COPY / 001</span></div>
-<div class="paper-rule"></div><div class="paper-label">ACCOUNT HOLDER</div><div class="handwritten">Alex Morgan</div>
-<div class="region region-name"></div><div class="paper-columns"><div><span>REFERENCE</span><b>DEMO—001</b></div><div><span>AMOUNT</span><b>1,250.00</b></div></div>
-<div class="paper-lines"></div><div class="paper-label">REVIEW NOTE</div><div class="paper-note">Human verified</div><div class="region region-amount"></div>
-<div class="paper-bottom">FICTIONAL DATA ONLY<span>01 / 01</span></div><div class="scan-beam"></div></div>
-<div class="scanner-bridge"><span>ICR / OPTICAL REVIEW</span><i></i><i></i><i></i></div></div>
-<div class="scene-tag tag-input"><span>01 / SOURCE</span><b>The original. Always.</b><small>FICTIONAL FORM / 001</small></div>
-<div class="scene-tag tag-evidence"><span>02 / EVIDENCE</span><b>Inspect the region</b><small>PIXELS BEFORE PREDICTIONS</small></div>
-<div class="scene-tag tag-correction"><span>03 / HUMAN REVIEW</span><b>Correction saved</b><i>✓</i></div>
-<div class="scene-tag tag-export"><span>04 / OUTPUT</span><b>{ } JSON / CSV</b><small>TRACEABLE BY DESIGN</small></div>
-<div class="scene-scale">−<span></span>+<b>ORIGINAL → EVIDENCE → DECISION</b></div>
-</div><figcaption id="scene-caption"><span class="scene-stage">${escape(workflow.steps[0][0])}</span><span>Interactive illustration / not live OCR</span></figcaption></figure>`;
+function sidebar(page) {
+  const group = (area) => `<div class="nav-group" data-area="${area}">
+<p class="nav-area">${AREAS[area].name} documentation</p>
+<ul>${pages.filter((entry) => entry.area === area).map((entry) =>
+    `<li><a href="${entry.output}" data-search="${escape(`${entry.title} ${entry.label} ${entry.source}`.toLowerCase())}"${entry === page ? ' aria-current="page"' : ''}>${escape(entry.label)}</a></li>`).join('')}
+</ul></div>`;
+  return `<aside class="sidebar">
+<label class="filter-label" for="nav-filter">Filter pages</label>
+<input id="nav-filter" type="search" placeholder="Filter SDK & Studio pages…" autocomplete="off" aria-describedby="nav-filter-hint">
+<p id="nav-filter-hint" class="nav-hint" role="status">${pages.length} pages · offline</p>
+<nav class="side-nav" aria-label="Documentation areas">${group('sdk')}${group('studio')}</nav>
+<p class="no-match" role="status" hidden>No matching pages.</p>
+<div class="side-links">
+<a href="${siteLinks.product.href}">${siteLinks.product.label} ↗</a>
+<a href="${siteLinks.demo.href}">${siteLinks.demo.label} ↗</a>
+<a href="${project}/releases">Windows downloads ↗</a>
+</div>
+<p class="sidebar-note">NAYEN v1 · ICR STUDIOS<br>Manual-review prototype. No bundled weights,<br>no validated OCR accuracy claim.</p>
+</aside>`;
 }
 
-function workflowPanel(workflow) {
-  return `<section class="workflow" data-stage="0" aria-labelledby="workflow-title"><div class="section-heading"><div><p class="eyebrow">WORKSPACE STUDY / 01</p>
-<h2 id="workflow-title">${escape(workflow.label)}</h2></div><span id="step-count">1 / ${workflow.steps.length}</span></div>
-<div class="workflow-body">${scene(workflow)}<ol class="steps">${workflow.steps.map(([title, detail], index) =>
-    `<li><button class="step" type="button" data-step="${index}" aria-pressed="${index === 0}"><span class="step-number">0${index + 1}</span><strong>${escape(title)}</strong><span>${escape(detail)}</span></button></li>`).join('')}</ol></div>
-<div class="controls" hidden><button id="previous" type="button" aria-label="Previous workflow step">←</button><button id="play" type="button" aria-pressed="false"><span aria-hidden="true">▷</span> Play workflow</button><button id="next" type="button" aria-label="Next workflow step">→</button><button id="reset" type="button">Reset</button><label>Speed <select id="speed"><option value="5000">Slow</option><option value="3000" selected>Normal</option><option value="1500">Fast</option></select></label></div>
-<p id="step-detail" role="status" aria-live="polite">Select a stage to explore. Motion is paused; this illustration does not run inference.</p>
-<noscript><p>All stages are described above. JavaScript is off; the complete guides and links still work.</p></noscript></section>`;
+function toc(headings) {
+  const items = headings.filter(({ depth }) => depth === 2 || depth === 3);
+  if (!items.length) return '';
+  return `<aside class="toc" aria-label="On this page"><p class="toc-title">On this page</p><nav><ul>${items.map(({ depth, text, id }) =>
+    `<li class="toc-d${depth}"><a href="#${escape(id)}" data-spy="${escape(id)}">${escape(text)}</a></li>`).join('')}</ul></nav></aside>`;
 }
 
-function directory(page) {
-  return `<div class="guide-search"><label for="search">Find your guide</label><input id="search" type="search" placeholder="Search titles or filenames…" autocomplete="off"><span class="search-hint">${pages.length} complete guides</span></div>
-<nav class="guide-links" aria-label="Documentation guides">${pages.map((item) =>
-    `<a href="${item.output}" data-search="${escape(`${item.title} ${item.source}`)}"${item === page ? ' aria-current="page"' : ''}><span>${escape(item.title)}</span><small>${escape(item.source)}</small></a>`).join('')}</nav><p id="no-results" role="status" hidden>No matching guides. Try another title or filename.</p>`;
+function pager(page) {
+  const index = pages.indexOf(page);
+  const prev = pages[index - 1];
+  const next = pages[index + 1];
+  return `<nav class="pager" aria-label="Page navigation">
+${prev ? `<a class="pager-prev" href="${prev.output}" rel="prev"><span>← Previous</span><strong>${escape(prev.title)}</strong><small>${AREAS[prev.area].name} docs</small></a>` : '<span></span>'}
+${next ? `<a class="pager-next" href="${next.output}" rel="next"><span>Next →</span><strong>${escape(next.title)}</strong><small>${AREAS[next.area].name} docs</small></a>` : '<span></span>'}
+</nav>`;
 }
 
 function footer(page) {
-  return `<footer><a class="brand" href="index.html">ICR<span class="brand-light">STUDIOS</span></a><p>Evidence first. Human authority, always.</p><a href="${page ? repository + page.source : project}">${page ? 'View Markdown source' : 'Explore the repository'} ↗</a><span>Public docs · Synthetic illustrations only</span></footer>`;
+  return `<footer class="site-footer">${BRAND_SVG}
+<div><p class="footer-brand">NAYEN<span>v1</span> · ICR STUDIOS</p>
+<p>Evidence first. Human authority, always. Synthetic illustrations only.</p></div>
+<a href="${page ? `${project}/edit/main/${page.source.split('/').map(encodeURIComponent).join('/')}` : project}">${page ? 'Edit this page on GitHub ↗' : 'Explore the repository ↗'}</a>
+<span>Static build · no runtime network calls · ${page ? `<a href="${repository + page.source.split('/').map(encodeURIComponent).join('/')}">Markdown source ↗</a>` : ''}</span></footer>`;
 }
 
-function showcase() {
-  return `<section class="showcase-section" id="showcase" aria-labelledby="showcase-title">
-<div class="editorial-heading"><div><p class="eyebrow">WATCH THE REAL WORKSPACE</p><h2 id="showcase-title">Import. Inspect.<br>Correct. Export.</h2></div>
-<p>18-second recording with fictional data.<br>Manual review, not successful OCR.<br>Recorded before the visual redesign.</p></div>
-<figure class="recording"><img src="media/studio-review.png" data-recording="media/studio-walkthrough.gif" alt="Recorded Studio workflow: import a fictional fixture, inspect regions, save a correction and export draft JSON." loading="lazy">
-<button class="recording-toggle" type="button" aria-pressed="false" hidden>Play recorded Studio demo</button>
-<figcaption>Real running Studio; one field reviewed. <a href="media/studio-walkthrough.gif">Open the recording directly</a>.</figcaption></figure></section>
-<section class="showcase-section" id="live-demo" aria-labelledby="live-demo-title">
-<div class="editorial-heading"><div><p class="eyebrow">REAL MODEL / EXTERNAL PROVIDER</p><h2 id="live-demo-title">Try LightOnOCR.<br>With your own sample.</h2></div>
-<p>LightOnAI's interactive Hugging Face Space.<br>Separate from the offline Studio.<br>Not the illustrated workflow above.</p></div>
-<p>Use <strong>synthetic documents only</strong>. Loading the Space connects your browser to Hugging Face/LightOnAI.
-Files you choose inside it are sent directly to that external provider, subject to its terms and retention policies.
-Never upload banking records, personal information, workspace keys or tokens.</p>
-<p>Availability, cold starts, queues and model errors are controlled by the provider. No measured accuracy or local OCR support is implied.</p>
-<p><a href="${lightOnSpace}" target="_blank" rel="noopener noreferrer">Open the official LightOnOCR 3 Space in a new tab ↗</a>
-· <a href="studio-README.html#separate-public-demo">About our separate gateway showcase</a></p>
-<div class="cloud-controls"><label><input id="space-consent" type="checkbox"> I understand this is an external cloud service and will use synthetic data only.</label>
-<button class="button button-primary" id="load-space" type="button" disabled hidden>Load interactive LightOnOCR</button>
-<button class="button button-secondary" id="unload-space" type="button" hidden>Disconnect demo</button></div>
-<p id="space-status" role="status" aria-live="polite">Not connected. No external Space is loaded until you consent and select Load.</p>
-<div id="space-container" data-space-origin="${lightOnEmbed}"></div>
-<p>If the embedded Space is unavailable, asleep, or blocked by your browser, use the official Space link above. Disconnecting removes the frame; it cannot undo provider uploads or guarantee remote deletion.</p>
-<noscript><p>JavaScript is off. Read the privacy notice above before opening the official Space link.</p></noscript></section>`;
-}
-
-function landing() {
-  const link = (source) => {
-    const [file, fragment] = source.split('#');
-    if (fragment && !pageHeadings.get(file)?.has(fragment)) {
-      throw new Error(`Broken landing anchor: ${source}`);
-    }
-    return `${bySource.get(file)?.output ?? 'overview.html'}${fragment ? `#${fragment}` : ''}`;
-  };
-  const roles = [
-    ['01', 'For operators', 'From first scan to final review.', 'Import a fictional fixture, inspect its regions and make an explicit human correction.', 'docs/STUDIO.md', 'Open the operator guide'],
-    ['02', 'For local builders', 'Your workspace. Your machine.', 'Follow local setup and verification, explore Windows packaging and keep model provisioning explicit.', 'docs/CONFIGURATION.md#source-runtime', 'Start locally'],
-    ['03', 'For integrators', 'Follow the contract, not a guess.', 'Explore authentication, document jobs, progress events and export boundaries.', 'docs/API.md', 'Read the API guide'],
-    ['04', 'For the curious', 'A separate public showcase.', 'Understand the isolated web demo and its explicit consent boundary before trying live mode.', 'studio/README.md#separate-public-demo', 'Explore the showcase'],
-    ['05', 'For evaluators', 'Evidence before accuracy claims.', 'Separate implemented review features from model availability, measured accuracy and open gates.', 'docs/STATUS.md', 'See implementation status'],
-    ['06', 'For maintainers', 'Understand what stays private.', 'Trace local storage, the worker and the human review boundary through the architecture.', 'docs/DESIGN.md', 'Explore the architecture'],
-  ];
-  return `${head('Document intelligence. Human judgment.', 'Explore ICR Studios: local document review, a recorded workflow and an opt-in external LightOnOCR demo.', true)}
-<body class="landing">${header()}<main id="content">
-<section class="landing-hero" aria-labelledby="landing-title"><div class="landing-intro"><div class="hero-title-block"><p class="eyebrow"><span class="tiny-cross">+</span> DOCUMENT INTELLIGENCE. HUMAN AUTHORITY.</p>
-<h1 id="landing-title">Every line.<br><em>In your hands.</em></h1></div><div class="hero-context"><p class="hero-kicker">THE SIGNAL IS IN THE DETAILS.</p>
-<p class="hero-lede">The original scan. The supporting evidence.<br>The judgment only you can make.</p><p class="hero-description">A local-first document workspace.<br>Inspect, correct and export. On your terms.</p>
-<div class="hero-actions"><a class="button button-primary" href="#live-demo">Try live OCR <span>↓</span></a><a class="button button-secondary" href="#showcase">Watch the workflow <span>↓</span></a><a class="button button-secondary" href="${project}/releases">Windows downloads <span>↗</span></a></div>
-<p class="prototype-note"><span class="status-dot"></span> MANUAL-REVIEW PROTOTYPE<br><span>No bundled weights or validated OCR accuracy.<br>Illustration, not a live inference result.</span></p>
- </div><div class="intro-index"><span>01 — IMPORT</span><span>02 — INSPECT</span><span>03 — CORRECT</span><span>04 — EXPORT</span><span class="index-end">SCROLL TO EXPLORE ↓</span></div></div>
-${workflowPanel(workflows['README.md'])}</section>
-<section class="principles" aria-label="Project boundaries"><div><span>01 / LOCAL STUDIO</span><p>Your documents stay in the local workflow.<br>No remote inference fallback.</p></div><div><span>02 / EXPLICIT REVIEW</span><p>Model evidence and human corrections<br>remain separate and traceable.</p></div><div><span>03 / HONEST BOUNDARIES</span><p>A working review flow, not a claim<br>of production-ready recognition.</p></div></section>
-${showcase()}
-<section class="guide-section" id="guides" aria-labelledby="guides-title"><div class="editorial-heading"><div><p class="eyebrow">FIND YOUR WAY IN</p><h2 id="guides-title">Less searching.<br>More understanding.</h2></div><p>Choose a starting point.<br>Every guide is here, in full.</p></div>
-<div class="role-grid">${roles.map(([number, role, title, detail, source, cta]) =>
-    `<a class="role-card" href="${link(source)}"><div class="role-meta"><span>${number} / ${role}</span><span aria-hidden="true">↗</span></div><h3>${title}</h3><p>${detail}</p><span class="card-cta">${cta} <span aria-hidden="true">→</span></span></a>`).join('')}</div></section>
-<section class="all-guides" aria-labelledby="all-guides-title"><div class="editorial-heading"><div><p class="eyebrow">THE COMPLETE REFERENCE</p><h2 id="all-guides-title">Nothing hidden.<br>Everything connected.</h2></div><a href="overview.html">Read the project overview ↗</a></div>${directory()}</section>
-<section class="closing-note"><span class="tiny-cross">+</span><h2>Start with evidence.<br>Keep the final say.</h2><a class="button button-primary" href="${project}/releases">Browse releases <span>↗</span></a><p>See published artifacts and their documented scope.<br>Availability is not a production-readiness claim.</p></section>
-${footer()}</main></body></html>`;
-}
-
-function render(page) {
+/* ----------------------------------------------------------------- markdown */
+function renderMarkdown(page) {
   const headings = [];
   const duplicates = new Map();
   const markdown = new Marked({
@@ -192,7 +283,7 @@ function render(page) {
         duplicates.set(base, count + 1);
         const id = base + (count ? `-${count}` : '');
         headings.push({ depth, text: plainText, id });
-        return `<h${depth} id="${escape(id)}">${text}<a class="anchor" href="#${escape(id)}" aria-label="Link to section">#</a></h${depth}>`;
+        return `<h${depth} id="${escape(id)}">${text}<a class="anchor" href="#${escape(id)}" aria-label="Link to section: ${escape(plainText)}">#</a></h${depth}>`;
       },
       link({ href, tokens, title }) {
         const url = resolveURL(href, page);
@@ -206,41 +297,110 @@ function render(page) {
         }
         return `<img src="${escape(url)}" alt="${escape(text)}" loading="lazy">`;
       },
+      code({ text, lang }) {
+        const language = String(lang || '').trim();
+        return `<pre class="code"${language ? ` data-lang="${escape(language)}"` : ''}><code>${highlight(text, language)}</code></pre>`;
+      },
     },
   });
   const content = markdown.parse(page.markdown);
   pageHeadings.set(page.source, new Set(headings.map(({ id }) => id)));
-  const workflow = workflows[page.source] ?? {
-    label: 'Explore this guide',
-    steps: headings.filter(({ depth }) => depth === 2).slice(0, 4)
-      .map(({ text }) => [text, 'Read the corresponding section below for the authoritative details.']),
-  };
-  if (!workflow.steps.length) workflow.steps.push(['Read', 'Explore the complete guide below.']);
-  const toc = headings.filter(({ depth }) => depth === 2).map(({ text, id }) =>
-    `<a href="#${escape(id)}">${escape(text)}</a>`).join('');
-  return `${head(page.title, `${page.title} — complete ICR Studios documentation, evidence and interactive workflows.`)}
-<body class="guide-page">${header()}<div class="layout"><aside class="sidebar">${directory(page)}
-<p class="sidebar-note">LOCAL FIRST / HUMAN REVIEW<br>Public documentation only.<br>No tokens. No API connection.</p></aside>
-<main id="content"><section class="hero"><a class="back-link" href="index.html#guides">← All guides</a><p class="eyebrow">THE FIELD GUIDE / ${escape(page.source)}</p>
-<h1>${escape(page.title)}</h1><p>Follow the workflow. Inspect the evidence. Keep the human in control.</p>
-<p class="notice">Manual-review prototype · No validated OCR accuracy or production-readiness claim.</p></section>
-${workflowPanel(workflow)}
-<details class="toc"><summary>On this page <span aria-hidden="true">↓</span></summary><nav aria-label="On this page">${toc}</nav></details>
-<article>${content}</article>${footer(page)}</main></div></body></html>`;
+  page.headings = headings;
+  return content;
 }
 
+function renderPage(page) {
+  const content = renderMarkdown(page);
+  return `${head(page.title, `${page.title} — NAYEN v1 ${AREAS[page.area].name} documentation for ICR Studios.`)}
+<body class="doc-page">${header(page.area)}<div class="shell">${sidebar(page)}
+<main id="content">
+<p class="crumb"><a href="index.html">Docs</a> / <span>${AREAS[page.area].name}</span> / ${escape(page.label)}</p>
+<article class="doc">${content}</article>
+${pager(page)}
+${footer(page)}
+</main>${toc(page.headings)}</div></body></html>`;
+}
+
+/* --------------------------------------------------------------------- home */
+function home() {
+  const areaSection = (area) => {
+    const entries = pages.filter((page) => page.area === area);
+    return `<section class="area" id="area-${area}" aria-labelledby="area-${area}-title">
+<div class="area-head"><div><p class="eyebrow">${String(area).toUpperCase()} DOCUMENTATION</p>
+<h2 id="area-${area}-title">${AREAS[area].name}</h2></div>
+<span class="area-count">${entries.length} pages</span></div>
+<p class="area-blurb">${escape(AREAS[area].blurb)}</p>
+<ol class="page-list">${entries.map((page, index) =>
+    `<li><a href="${page.output}"><span class="page-no">${String(index + 1).padStart(2, '0')}</span><span class="page-body"><strong>${escape(page.label)}</strong><small>${escape(page.excerpt)}</small></span><span class="page-go" aria-hidden="true">→</span></a></li>`).join('')}</ol>
+</section>`;
+  };
+  return `${head('NAYEN v1 documentation', 'SDK and Studio documentation for NAYEN v1 — the ICR Studios handwriting-form ICR engine (Indra perception + Laya decisions) and its operator workspace.')}
+<body class="home-page">${header()}<div class="shell shell-home">
+<main id="content">
+<section class="home-hero">
+<p class="eyebrow"><span class="tiny-cross">+</span> ICR STUDIOS / GITHUB PAGES</p>
+<h1>Documentation,<br><em>not marketing.</em></h1>
+<p class="home-lede">Two surfaces, one product family. The <strong>SDK</strong> documents the NAYEN v1 engine —
+Indra perception, Laya decisions, the executor seam and the WASM host loop.
+The <strong>Studio</strong> documents the operator workspace shipped as the Windows package.</p>
+<div class="home-actions">
+<a class="button button-primary" href="sdk-architecture.html">Read the SDK docs <span aria-hidden="true">→</span></a>
+<a class="button button-secondary" href="studio-guide.html">Open the Studio guide <span aria-hidden="true">→</span></a>
+<a class="button button-secondary ext" href="${siteLinks.product.href}">${siteLinks.product.label} <span aria-hidden="true">↗</span></a>
+<a class="button button-secondary ext" href="${siteLinks.demo.href}">${siteLinks.demo.label} <span aria-hidden="true">↗</span></a>
+</div>
+<p class="status-note"><span class="status-dot" aria-hidden="true"></span>Manual-review prototype · no bundled OCR weights · no validated accuracy claim.
+Missing models produce failure evidence, never invented text.</p>
+</section>
+<section class="home-search" aria-labelledby="home-search-title">
+<label id="home-search-title" for="home-search">Search all documentation <span class="search-hint">titles, sections and text · works offline</span></label>
+<input id="home-search" type="search" placeholder="e.g. executor, profile, unlock, export, provenance…" autocomplete="off">
+<ol id="search-results" aria-live="polite"></ol>
+<p id="search-empty" role="status" hidden>No matches. Try a shorter query.</p>
+</section>
+${areaSection('sdk')}
+${areaSection('studio')}
+${footer()}
+</main></div></body></html>`;
+}
+
+/* --------------------------------------------------------------------- build */
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
-for (const page of pages) await writeFile(path.join(out, page.output), render(page));
-await writeFile(path.join(out, 'index.html'), landing());
+for (const page of pages) {
+  await writeFile(path.join(out, page.output), renderPage(page));
+}
+await writeFile(path.join(out, 'index.html'), home());
+
+// Fail the build on broken anchors between published pages.
 for (const { source, suffix, from } of localLinks) {
   if (!suffix.startsWith('#')) continue;
   const id = decodeURIComponent(suffix.slice(1));
-  if (id && !pageHeadings.get(source).has(id)) {
+  if (id && !pageHeadings.get(source)?.has(id)) {
     throw new Error(`Broken documentation anchor: ${from} → ${source}${suffix}`);
   }
 }
+
+// Offline search index (embedded as a script, no fetch/CSP connect-src needed).
+const searchIndex = pages.map((page) => ({
+  output: page.output,
+  title: page.title,
+  label: page.label,
+  area: AREAS[page.area].name,
+  heads: page.headings.filter(({ depth }) => depth === 2 || depth === 3)
+    .map(({ text, id }) => [text, id]),
+  text: page.markdown.replace(/```[\s\S]*?```/g, ' ').replace(/[#>*`|[\]()]/g, ' ')
+    .replace(/\s+/g, ' ').toLowerCase().slice(0, 4000),
+}));
+await writeFile(path.join(out, 'index-data.js'),
+  `window.__NAYEN_DOCS=${JSON.stringify(searchIndex)};\n`);
+
+// Assets: tokens are copied from the single source of truth, never re-declared.
+await cp(path.join(root, 'packages/theme/tokens.css'), path.join(out, 'tokens.css'));
 await cp(path.join(root, 'docs/media'), path.join(out, 'media'), { recursive: true });
-for (const asset of ['styles.css', 'app.js']) await cp(path.join(here, asset), path.join(out, asset));
+await cp(path.join(here, 'fonts'), path.join(out, 'fonts'), { recursive: true });
+for (const asset of ['styles.css', 'app.js', 'nayen-mark.svg']) {
+  await cp(path.join(here, asset), path.join(out, asset));
+}
 await writeFile(path.join(out, '.nojekyll'), '');
-console.log(`Built landing page + ${pages.length} complete guides with 3D workflows in ${out}`);
+console.log(`Built NAYEN v1 docs: index + ${pages.length} pages (${REGISTRY.filter((p) => p.area === 'sdk').length} SDK, ${REGISTRY.filter((p) => p.area === 'studio').length} Studio) in ${out}`);
