@@ -3,6 +3,7 @@ WORKDIR /build/studio
 COPY studio/package.json studio/package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY studio/ ./
+COPY packages/theme/ /build/packages/theme/
 RUN npm run build
 
 FROM python:3.12.3-slim-bookworm AS base
