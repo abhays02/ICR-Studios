@@ -11,6 +11,19 @@ const authorization = (token: string) => ['Bearer', token].join(' ')
 const terminal = new Set(['needs_review','partial','failed','cancelled','completed'])
 const fieldTypes = ['text','multiline','enum','decimal','checkbox','date','comb','ifsc','pan','amount_words','amount_figures']
 type API = <T>(path: string, init?: RequestInit) => Promise<T>
+type ModelStatus = 'model_unavailable' | 'artifact_present_not_loaded' | 'artifact_invalid' | 'unsupported_unverified' | 'checking' | string
+type ModelItem = { model_id: string; status: ModelStatus; inference_tested?: boolean; revision?: string; checksum_verification?: string }
+type ModelReport = { local_only: boolean; items: ModelItem[]; providers?: Record<string, string>; external_fallback?: boolean }
+const READY_INFERENCE = new Set(['artifact_present_not_loaded', 'loaded', 'ready'])
+function isRuntimeReady(status: string) { return READY_INFERENCE.has(status) }
+function statusLabel(status: string) {
+  if (status === 'artifact_present_not_loaded') return 'ready (lazy load on first OCR job)'
+  if (status === 'model_unavailable') return 'missing local weights'
+  if (status === 'artifact_invalid') return 'artifact invalid'
+  if (status === 'unsupported_unverified') return 'unsupported / unverified'
+  if (status === 'loaded' || status === 'ready') return 'ready'
+  return status.replaceAll('_', ' ')
+}
 function download(data: Blob, name: string) {
   const url = URL.createObjectURL(data), a = document.createElement('a')
   a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
@@ -39,8 +52,8 @@ type AttemptRecord = {seconds?: number; outcome?: string}
     explicit engine-not-loaded state. Never fabricates timings or output. */
 function EngineStrip({health, results}: {health: Record<string,unknown>|null; results: Results|null}) {
   const [profile,setProfile]=useState<Profile>(DEFAULT_ENGINE_CONFIG.profile)
-  const inference=String(health?.inference??'checking')
-  const loaded=inference==='loaded'||inference==='ready'
+  const inferenceStatus=String(health?.inference??'checking')
+  const runtimeReady=isRuntimeReady(inferenceStatus)
   const fields=results?Object.values(results.fields):[]
   const modelsUsed=[...new Set(fields.map(f=>f.model_used).filter((m): m is string=>!!m))]
   const attempts=fields.flatMap(f=>((f.provenance?.attempts ?? []) as AttemptRecord[]))
@@ -50,8 +63,8 @@ function EngineStrip({health, results}: {health: Record<string,unknown>|null; re
     : {}
   return <div className="engine-strip" aria-label="NAYEN v1 engine status">
     <div className="engine-strip-head">
-      <span className={'engine-state '+(loaded?'loaded':'')} aria-live="polite">
-        {loaded?`ENGINE LOADED · ${inference}`:`ENGINE NOT LOADED · ${inference}`}
+      <span className={'engine-state '+(runtimeReady?'loaded':'')} aria-live="polite">
+        {runtimeReady?`ENGINE READY · ${statusLabel(inferenceStatus)}`:`ENGINE NOT READY · ${statusLabel(inferenceStatus)}`}
       </span>
       <span className="profile-switch" role="group" aria-label="NAYEN v1 adapter profile">
         {ENGINE_PROFILES.map(p=><button key={p} type="button" aria-pressed={profile===p} onClick={()=>setProfile(p)}>{p}</button>)}
@@ -63,11 +76,11 @@ function EngineStrip({health, results}: {health: Record<string,unknown>|null; re
     <div className="provenance-strip"><span>MODELS USED</span>
       {modelsUsed.length
         ? modelsUsed.map(m=><code key={m}>{m}</code>)
-        : <code className="none">none — engine not loaded; jobs fail honestly, never invent text</code>}
+        : <code className="none">{runtimeReady?'none yet — queue local OCR to record adapter/model provenance':'none — runtime not ready; jobs fail honestly, never invent text'}</code>}
     </div>
     <p className="caption">Profile “{profile}” previews the NAYEN v1 adapter seam (Indra perception → Laya decision).
       The local backend currently routes through the handwriting adapter; stages it does not report stay “—”.
-      Timings shown are real attempt seconds from stored provenance, not estimates.</p>
+      Readiness mirrors backend status ({statusLabel(inferenceStatus)}). Timings shown are real attempt seconds from stored provenance, not estimates.</p>
   </div>
 }
 function ImageAsset({path, token, alt, className}: {path: string; token: string; alt: string; className?: string}) {
@@ -278,7 +291,10 @@ function UploadQueue({token,template,added,report}: {token:string;template:Templ
 
 type SettingsData={revision:number;values:Record<string,unknown>;sources:Record<string,string>;runtime_keys:string[]}
 type SchemaData={schema:{properties:Record<string,{type?:string;enum?:unknown[];description?:string;minimum?:number;maximum?:number}>};runtime_keys:string[];help:unknown}
-function ModelCatalog() {
+function ModelCatalog({health, models}: {health: Record<string,unknown>|null; models: ModelReport|null}) {
+  const inference = String(health?.inference ?? 'checking')
+  const primary = models?.items.find(item => item.model_id === 'microsoft/trocr-base-handwritten')
+  const candidates = (models?.items ?? []).filter(item => item.model_id !== 'microsoft/trocr-base-handwritten')
   return <section className="model-catalog" aria-labelledby="catalog-title">
     <div className="section-heading"><div><span className="eyebrow">NAYEN v1 ENGINE / ADAPTER REGISTRY</span><h2 id="catalog-title">Adapters, not promises.</h2></div><span className="badge">OFFLINE ONLY</span></div>
     <p>NAYEN v1 splits the pipeline into <strong>Indra</strong> (perception: orient → detect → crop → recognize)
@@ -287,28 +303,28 @@ function ModelCatalog() {
     <div className="model-grid">
       <article className="model-card implemented"><span className="model-index">PROFILE / HANDWRITING</span><h3>TrOCR adapter</h3>
         <code>microsoft/trocr-base-handwritten</code><p>The only implemented local inference adapter, exposed through the NAYEN v1 seam as the <code>handwriting</code> profile. Approved local weights are required; missing weights fail explicitly and never invent text.</p>
-        <span className="model-status">Readiness: see live API report below</span></article>
+        <span className="model-status">Readiness: {statusLabel(primary?.status ?? inference)}{primary?.revision ? ` · rev ${primary.revision.slice(0,8)}` : ''}</span></article>
       <article className="model-card engine"><span className="model-index">PROFILES / INDRA · SWEEP</span><h3>NAYEN Rust engine</h3>
         <code>nayen-core + nayen-wasm<br/>orient · det · script · rec · order</code>
-        <p>Native Rust perception (Indra) and decision (Laya) stages with per-stage timings, script routing and full <code>PageResult</code> provenance. Under active development; this Studio build ships it <strong>not loaded</strong> — jobs report failure evidence instead of predictions.</p>
-        <span className="badge">ENGINE NOT LOADED</span>
-        <span className="model-status">Contract mirrored in Studio types / runtime pending</span></article>
+        <p>Native Rust perception (Indra) and decision (Laya) stages with per-stage timings, script routing and full <code>PageResult</code> provenance. Studio reports runtime truth directly from backend readiness and job evidence.</p>
+        <span className="badge">{isRuntimeReady(inference) ? 'ENGINE READY' : 'ENGINE NOT READY'}</span>
+        <span className="model-status">Backend readiness: {statusLabel(inference)}</span></article>
       <article className="model-card"><span className="model-index">REQUESTED CANDIDATES</span><h3>LightOnOCR 3 · Xiaomi OCR 0</h3>
         <code>lightonai/LightOnOCR-3-0.8B|1B|4B<br/>SeerRay-Lab/Xiaomi-OCR-0</code>
         <p>Upstream identities confirmed; no adapter is implemented and no inference endpoint is configured or guessed. This Studio blocks vLLM and remote fallback, so these candidates never change job routing.</p>
-        <span className="badge">NOT INTEGRATED</span>
-        <span className="model-status">Identity known / adapter pending</span></article>
+        <span className="badge">PENDING IMPLEMENTATION</span>
+        <span className="model-status">{candidates.length
+          ? candidates.map(item => `${item.model_id}: ${statusLabel(item.status)}`).join(' · ')
+          : 'Identity known / adapter pending'}</span></article>
     </div>
     <p className="caption">No measured comparison or accuracy claim is available. Candidate entries do not change job routing. No cloud requests or remote fallback.</p>
   </section>
 }
-function SettingsPanel({api,report}: {api:API;report:(s:string)=>void}) {
+function SettingsPanel({api,report,health,models}: {api:API;report:(s:string)=>void;health:Record<string,unknown>|null;models:ModelReport|null}) {
   const [settings,setSettings]=useState<SettingsData|null>(null),[schema,setSchema]=useState<SchemaData|null>(null)
   const [query,setQuery]=useState(''),[level,setLevel]=useState('Basic'),[draft,setDraft]=useState<Record<string,unknown>>({})
-  const [models,setModels]=useState<unknown>(null)
   useEffect(()=>{api('/settings').then(v=>setSettings(v as SettingsData)).catch(e=>report(e.message))
     api('/settings/schema').then(v=>setSchema(v as SchemaData)).catch(e=>report(e.message))
-    api('/models').then(setModels).catch(e=>report(e.message))
   },[api,report])
   async function save(values:Record<string,unknown>) {
     if(!settings)return
@@ -317,7 +333,7 @@ function SettingsPanel({api,report}: {api:API;report:(s:string)=>void}) {
   }
   return <section className="settings"><span className="eyebrow">SYSTEM / OPERATOR CONTROL</span><h1>Configuration</h1>
     <p>No provider key fields. OpenRouter and vLLM are blocked, not connected. No off-host fallback.</p>
-    <ModelCatalog/>
+    <ModelCatalog health={health} models={models}/>
     <div className="inline">{['Basic','Advanced','Expert'].map(v=><button key={v} aria-pressed={level===v} onClick={()=>setLevel(v)}>{v}</button>)}
       <input aria-label="Search settings" placeholder="Search settings…" value={query} onChange={e=>setQuery(e.target.value)}/></div>
     {settings&&schema&&<>
@@ -364,6 +380,7 @@ export default function App() {
   const [selected,setSelected]=useState(''),[image,setImage]=useState(''),[job,setJob]=useState<Job|null>(null)
   const [aligned,setAligned]=useState(false),[evidenceOpen,setEvidenceOpen]=useState(false),[value,setValue]=useState<string|boolean|null>('')
   const [newVersion,setNewVersion]=useState(''),[health,setHealth]=useState<Record<string,unknown>|null>(null)
+  const [modelReport,setModelReport]=useState<ModelReport|null>(null)
   const [events,setEvents]=useState(0),[busy,setBusy]=useState(false)
   const editBuffer=useRef({key:'',dirty:false})
   const requestControllers=useRef(new Set<AbortController>()),selectionSeq=useRef(0)
@@ -403,8 +420,9 @@ export default function App() {
     // Authentication starts an external API synchronization, not a derived render.
     // oxlint-disable-next-line react/set-state-in-effect
     run(async()=>{
-      const [t,s,d]=await Promise.all([api<{items:Template[]}>('/templates'),api<{items:Sample[]}>('/samples'),api<{items:Doc[]}>('/documents')])
+      const [t,s,d,m]=await Promise.all([api<{items:Template[]}>('/templates'),api<{items:Sample[]}>('/samples'),api<{items:Doc[]}>('/documents'),api<ModelReport>('/models')])
       setTemplates(t.items);setSamples(s.items);setDocs(d.items);setConnected(true)
+      setModelReport(m)
       if(t.items[0]){setHist({past:[],present:t.items[0],future:[]});setSelected(t.items[0].fields[0]?.field_id||'')}
     })
   },[token,api,run,authEpoch])
@@ -486,6 +504,7 @@ export default function App() {
   function logout() {
     selectionSeq.current++;activeDocument.current='';requestControllers.current.forEach(c=>c.abort());setToken('');setEntry('');setConnected(false)
     setDocs([]);setSamples([]);setTemplates([]);setDoc(null);setResults(null);setJob(null);setHist(null);setImage('');setError('');setNotice('')
+    setModelReport(null)
   }
   async function exportResult(format:string,mode:string) {
     if(!doc)return
@@ -536,7 +555,7 @@ export default function App() {
                 <button className="primary" disabled={busy} onClick={()=>run(async()=>{const d=await api<Doc>(`/samples/${s.sample_id}/import`,{method:'POST'});await refresh();await loadDoc(d.id)})}>Import fixture →</button>}
             </div>
           </article>)}</div></section>}
-        {tab==='settings'&&<SettingsPanel api={api} report={report}/>}
+        {tab==='settings'&&<SettingsPanel api={api} report={report} health={health} models={modelReport}/>}
         {tab==='studio'&&<><section className="session-overview" aria-label="Workspace overview">
           <div className="overview-title"><span className="eyebrow">OPERATIONS / REVIEW DESK</span><h2>Document control.</h2><span className="caption">Live local records. No inferred accuracy.</span></div>
           <dl className="overview-metrics"><div><dt>Stored documents</dt><dd>{docs.length.toString().padStart(2,'0')}</dd></div>

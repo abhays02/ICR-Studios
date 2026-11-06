@@ -54,6 +54,22 @@ shipped samples are synthetic CC0 renders in a script font — they prove the
 pipeline runs, not that it reads handwriting like yours.
 [Status & open gates →](docs/STATUS.md)
 
+## README completion checklist (testable)
+
+Treat this as the strict "done" gate for the promises in this README:
+
+- [ ] **Core seam still shared across hosts.** `cargo test -p nayen-core`.
+- [ ] **Native host path works.** `cargo run --release -p nayen-cli -- run data/samples/05-cheque.png`.
+- [ ] **Browser host path builds and serves.** `./scripts/build_wasm && (cd web && npm run build)`.
+- [ ] **Studio workspace verifies.** `(cd studio && npm run lint && npm test && npm run build)`.
+- [ ] **Backend + Studio API contract verifies.** `uv sync --frozen --extra test && uv run --frozen --extra test python -m unittest discover -s tests -v`.
+- [ ] **Cloud demo remains isolated from offline backend.** `uv run --frozen --extra test python -m unittest web_demo.test_app -v`.
+- [ ] **No claim outruns evidence.** `docs/STATUS.md` and `docs/MODELS.md` still list open gates for unverified candidates.
+
+When every line above is reproducibly green, the repository is "done" for the
+current README claims. If any line fails, fix or narrow the corresponding claim
+before marking completion.
+
 ## The adapter seam
 
 `nayen-core` never calls a runtime. It asks for tensors:
