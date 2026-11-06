@@ -103,9 +103,10 @@ try {
   page.on('response',response=>{
     if(response.request().method()==='POST'&&uploadRoute.test(response.url()))uploadResponses.push(response.status())
   })
-  await page.locator('.queue-item').first().getByRole('button',{name:'Retry upload',exact:true}).click()
-  await page.locator('.queue-item').nth(1).getByRole('button',{name:'Retry upload',exact:true}).click()
-  await page.waitForFunction(()=>[...document.querySelectorAll('.queue-item small')].filter(e=>e.textContent==='stored').length===2)
+  for(const storedTarget of [1,2]) {
+    await page.getByRole('button',{name:'Retry upload',exact:true}).first().click()
+    await page.waitForFunction(target=>[...document.querySelectorAll('.queue-item small')].filter(e=>e.textContent==='stored').length>=target,storedTarget)
+  }
   assert.deepEqual(uploadResponses,[201,201])
   checks.push('two-file native XHR queue: actual queued/active cancellation and explicit successful retries')
   const bytes=await readFile(resolve(root,'data/samples/01-car.png'))
