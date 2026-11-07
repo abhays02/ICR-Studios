@@ -104,8 +104,17 @@ try {
     if(response.request().method()==='POST'&&uploadRoute.test(response.url()))uploadResponses.push(response.status())
   })
   for(const storedTarget of [1,2]) {
-    await page.getByRole('button',{name:'Retry upload',exact:true}).first().click()
-    await page.waitForFunction(target=>[...document.querySelectorAll('.queue-item small')].filter(e=>e.textContent==='stored').length>=target,storedTarget)
+    for(let attempt=0;attempt<4;attempt++) {
+      await page.getByRole('button',{name:'Retry upload',exact:true}).first().click()
+      try {
+        await page.waitForFunction(target=>[...document.querySelectorAll('.queue-item small')].filter(e=>e.textContent==='stored').length>=target,storedTarget,{timeout:15000})
+        break
+      } catch(error) {
+        const timedOut=(error instanceof Error)&&error.name==='TimeoutError'
+        const hasRetry=await page.getByRole('button',{name:'Retry upload',exact:true}).count()>0
+        if(!timedOut||!hasRetry||attempt===3) throw error
+      }
+    }
   }
   assert.deepEqual(uploadResponses,[201,201])
   checks.push('two-file native XHR queue: actual queued/active cancellation and explicit successful retries')
@@ -209,8 +218,12 @@ try {
   assert.deepEqual(failures,[])
   console.log(JSON.stringify({status:'passed',checks:checks.length,workflows:checks,screenshots:['var/artifacts/studio-desktop.png','var/artifacts/studio-mobile.png']},null,2))
 } catch(error) {
-  console.error(JSON.stringify({queue:await page.locator('.queue-item').allTextContents(),
-    alerts:await page.getByRole('alert').allTextContents(),notices:await page.locator('.messages').textContent()},null,2))
+  const diagnostics=await page.evaluate(()=>({
+    queue:[...document.querySelectorAll('.queue-item')].map(item=>item.textContent?.trim()??''),
+    alerts:[...document.querySelectorAll('[role=\"alert\"]')].map(item=>item.textContent?.trim()??''),
+    notices:document.querySelector('.messages')?.textContent?.trim()??null,
+  }))
+  console.error(JSON.stringify(diagnostics,null,2))
   await mkdir(resolve(root,'var/artifacts'),{recursive:true})
   await page.screenshot({path:resolve(root,'var/artifacts/studio-smoke-failure.png'),fullPage:true})
   throw error
